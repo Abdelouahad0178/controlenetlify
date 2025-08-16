@@ -1,0 +1,19 @@
+{
+  "name": "anapharmo-admin-tools",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Scripts d'administration Firebase (ESM) + page admin index.html",
+  "scripts": {
+    "ensure-admin": "node ensureAdminUser.js",
+    "backfill-societe": "node backfillSociete.js",
+    "sync-auth": "node syncAuth.js --watch",
+    "fix-db": "node fixDatabase.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
