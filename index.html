@@ -122,14 +122,12 @@
   <header>
     <h1>🔐 Administration Anapharmo</h1>
     <div id="authContainer">
-      <!-- Formulaire de connexion -->
-      <form id="loginForm" class="login-form hidden">
+      <form id="loginForm" class="login-form">
         <input id="email" type="email" placeholder="admin@email.com" autocomplete="username" required />
         <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
         <button type="submit" id="loginBtn">Connexion</button>
       </form>
       
-      <!-- Informations utilisateur connecté -->
       <div id="userInfo" class="user-info hidden">
         <div class="network-status">
           <div class="connection-status">
@@ -151,15 +149,12 @@
     </div>
   </header>
 
-  <!-- Indicateur hors ligne -->
   <div id="offlineIndicator" class="offline-indicator hidden">
     🌐 Mode hors ligne - Reconnexion automatique en cours...
   </div>
 
-  <!-- Conteneur pour les alertes -->
   <div id="alertContainer"></div>
 
-  <!-- Section des statistiques -->
   <div class="card hidden" id="statsCard">
     <h2>📊 Tableau de bord</h2>
     <div class="stats-grid" id="statsGrid">
@@ -186,14 +181,9 @@
     </div>
   </div>
 
-  <!-- Section de gestion des utilisateurs -->
   <div class="card">
     <h2>👥 Gestion des utilisateurs</h2>
     
-    <!-- Message de statut -->
-    <div id="statusMessage"></div>
-
-    <!-- Interface d'administration -->
     <div id="adminInterface" class="hidden">
       <div class="auto-admin-notice">
         <strong>🔧 Mode administrateur automatique activé</strong><br>
@@ -238,25 +228,17 @@
               <th>🔧 Actions</th>
             </tr>
           </thead>
-          <tbody id="usersTable">
-            <tr>
-              <td colspan="7" style="text-align: center; padding: 40px; color: var(--muted);">
-                <div>Chargement des utilisateurs...</div>
-              </td>
-            </tr>
-          </tbody>
+          <tbody id="usersTable"></tbody>
         </table>
       </div>
     </div>
     
-    <!-- Message de connexion -->
     <div id="loginPrompt" class="alert alert-info">
       🔒 <strong>Connexion requise</strong><br>
       Connectez-vous avec un compte administrateur pour gérer les utilisateurs.
     </div>
   </div>
 
-  <!-- Section des logs -->
   <div class="card hidden" id="logsCard">
     <h2>📝 Journal d'activité</h2>
     <div class="logs-section" id="logsContainer">
@@ -266,7 +248,6 @@
     </div>
   </div>
 
-  <!-- Modal de confirmation -->
   <div id="confirmModal" class="modal hidden">
     <div class="modal-content">
       <h3 id="modalTitle">Confirmation</h3>
@@ -278,7 +259,6 @@
     </div>
   </div>
 
-  <!-- Modal de changement de société -->
   <div id="companyModal" class="modal hidden">
     <div class="modal-content">
       <h3>🏢 Modifier le nom de société</h3>
@@ -297,7 +277,6 @@
     </div>
   </div>
 
-  <!-- Modal de changement de rôle -->
   <div id="roleModal" class="modal hidden">
     <div class="modal-content">
       <h3>Modifier le rôle utilisateur</h3>
@@ -328,10 +307,13 @@
       getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { 
-      getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, limit, getDocs, where, setDoc, getDoc, serverTimestamp, addDoc
+      getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, limit, getDocs, where, setDoc, getDoc, serverTimestamp, addDoc, deleteDoc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Configuration Firebase
+    // --- 🚨 ALERTE SÉCURITÉ ---
+    // Ne JAMAIS exposer vos clés API directement dans le code client.
+    // Utilisez des variables d'environnement et un outil de build (ex: Vite, Webpack)
+    // ou chargez la configuration depuis une fonction backend sécurisée.
     const firebaseConfig = {
       apiKey: "AIzaSyBHQSPXwED7W-FQMMs1D-OZcjW-5AP8A-w",
       authDomain: "anapharmo.firebaseapp.com",
@@ -347,10 +329,12 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Email administrateur autorisé
+    // --- 🔒 NOTE DE SÉCURITÉ ---
+    // La meilleure pratique est d'utiliser les "Custom Claims" de Firebase Auth
+    // pour gérer les rôles de manière sécurisée côté serveur.
     const ADMIN_EMAIL = "echchaaba0178@gmail.com";
 
-    // Éléments DOM
+    // --- Éléments DOM ---
     const elements = {
       // Authentification
       loginForm: document.getElementById('loginForm'),
@@ -368,7 +352,6 @@
       
       // Interface
       alertContainer: document.getElementById('alertContainer'),
-      statusMessage: document.getElementById('statusMessage'),
       loginPrompt: document.getElementById('loginPrompt'),
       adminInterface: document.getElementById('adminInterface'),
       statsCard: document.getElementById('statsCard'),
@@ -411,1444 +394,361 @@
       companyConfirm: document.getElementById('companyConfirm')
     };
 
-    // Variables globales avec gestion réseau améliorée
+    // --- Variables globales ---
     let currentUser = null;
     let isAdmin = false;
     let allUsers = [];
     let unsubscribeUsers = null;
     let unsubscribeLogs = null;
-    let pendingAction = null;
-    let isOnline = navigator.onLine;
-    let networkQuality = 'excellent';
-    let reconnectAttempts = 0;
-    let maxReconnectAttempts = 5;
-    let lastDataUpdate = Date.now();
-
-    // Gestion du réseau améliorée
-    class NetworkManager {
-      constructor() {
-        this.listeners = [];
-        this.retryTimeouts = new Map();
-        this.connectionCheckInterval = null;
-        this.lastSuccessfulOperation = Date.now();
-        this.enableNetworkTesting = true;
-        this.testCount = 0;
-        this.maxTests = 10;
-        
-        window.addEventListener('online', () => this.handleOnline());
-        window.addEventListener('offline', () => this.handleOffline());
-        
-        this.startConnectionMonitoring();
-      }
-
-      startConnectionMonitoring() {
-        setTimeout(() => {
-          if (this.enableNetworkTesting && this.testCount < this.maxTests) {
-            this.checkNetworkQuality();
-          }
-        }, 10000);
-        
-        this.connectionCheckInterval = setInterval(() => {
-          if (this.enableNetworkTesting && this.testCount < this.maxTests) {
-            this.checkNetworkQuality();
-            this.testCount++;
-            
-            if (this.testCount >= this.maxTests) {
-              console.log('🌐 Tests de connectivité automatiques désactivés (limite atteinte)');
-              this.enableNetworkTesting = false;
-            }
-          }
-        }, 120000);
-      }
-
-      async checkNetworkQuality() {
-        try {
-          const start = Date.now();
-          
-          const testEndpoints = [
-            'https://www.google.com/favicon.ico',
-            'https://firestore.googleapis.com/favicon.ico',
-            'https://www.gstatic.com/images/branding/product/1x/firebase_16dp.png'
-          ];
-          
-          let response;
-          let testUrl = testEndpoints[0];
-          
-          try {
-            response = await fetch(testUrl, {
-              cache: 'no-cache',
-              mode: 'no-cors',
-              method: 'HEAD'
-            });
-          } catch (firstError) {
-            try {
-              testUrl = testEndpoints[1];
-              response = await fetch(testUrl, {
-                cache: 'no-cache',
-                mode: 'no-cors',
-                method: 'HEAD'
-              });
-            } catch (secondError) {
-              testUrl = 'https://firebase.google.com/favicon.ico';
-              response = await fetch(testUrl, {
-                cache: 'no-cache',
-                mode: 'no-cors',
-                method: 'HEAD'
-              });
-            }
-          }
-          
-          const duration = Date.now() - start;
-          
-          if (duration < 300) {
-            this.updateNetworkQuality('excellent');
-          } else if (duration < 800) {
-            this.updateNetworkQuality('good');
-          } else if (duration < 2000) {
-            this.updateNetworkQuality('fair');
-          } else {
-            this.updateNetworkQuality('poor');
-          }
-          
-          this.lastSuccessfulOperation = Date.now();
-          console.log(`🌐 Test réseau: ${duration}ms via ${testUrl}`);
-          
-        } catch (error) {
-          if (this.testCount < 3) {
-            console.warn('⚠️ Test réseau échoué:', error.message);
-          }
-          
-          if (navigator.onLine) {
-            this.updateNetworkQuality('poor');
-          } else {
-            this.updateNetworkQuality('offline');
-          }
-        }
-      }
-
-      disableNetworkTesting() {
-        this.enableNetworkTesting = false;
-        if (this.connectionCheckInterval) {
-          clearInterval(this.connectionCheckInterval);
-          this.connectionCheckInterval = null;
-        }
-        console.log('🌐 Tests de connectivité désactivés manuellement');
-        this.updateNetworkQuality('good');
-      }
-
-      enableNetworkTesting() {
-        this.enableNetworkTesting = true;
-        this.testCount = 0;
-        this.startConnectionMonitoring();
-        console.log('🌐 Tests de connectivité réactivés');
-      }
-
-      updateNetworkQuality(quality) {
-        networkQuality = quality;
-        this.updateNetworkDisplay();
-      }
-
-      updateNetworkDisplay() {
-        const bars = [
-          document.getElementById('bar1'),
-          document.getElementById('bar2'), 
-          document.getElementById('bar3'),
-          document.getElementById('bar4')
-        ];
-
-        bars.forEach(bar => bar.className = 'network-bar');
-
-        switch (networkQuality) {
-          case 'excellent':
-            bars.forEach(bar => bar.classList.add('active'));
-            elements.networkQuality.textContent = 'Excellent';
-            break;
-          case 'good':
-            bars.slice(0, 3).forEach(bar => bar.classList.add('active'));
-            elements.networkQuality.textContent = 'Bon';
-            break;
-          case 'fair':
-            bars.slice(0, 2).forEach(bar => bar.classList.add('weak'));
-            elements.networkQuality.textContent = 'Moyen';
-            break;
-          case 'poor':
-            bars[0].classList.add('poor');
-            elements.networkQuality.textContent = 'Faible';
-            break;
-          case 'offline':
-            elements.networkQuality.textContent = 'Hors ligne';
-            break;
-        }
-      }
-
-      handleOnline() {
-        console.log('🌐 Connexion rétablie');
-        isOnline = true;
-        elements.offlineIndicator.classList.add('hidden');
-        setConnectionStatus('connected');
-        this.retryFailedOperations();
-      }
-
-      handleOffline() {
-        console.log('🌐 Connexion perdue');
-        isOnline = false;
-        elements.offlineIndicator.classList.remove('hidden');
-        setConnectionStatus('offline');
-      }
-
-      retryFailedOperations() {
-        if (isAdmin && !unsubscribeUsers) {
-          console.log('🔄 Reconnexion des listeners Firestore...');
-          setTimeout(() => {
-            if (isAdmin) {
-              listenToUsers();
-              listenToLogs();
-            }
-          }, 1000);
-        }
-      }
-
-      async executeWithRetry(operation, maxRetries = 3) {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            const result = await operation();
-            return result;
-          } catch (error) {
-            console.warn(`Tentative ${attempt}/${maxRetries} échouée:`, error.message);
-            
-            if (attempt === maxRetries) {
-              throw error;
-            }
-            
-            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-        }
-      }
-    }
-
-    const networkManager = new NetworkManager();
-
-    // Utilitaires
-    function showAlert(type, message, duration = 5000) {
+    let networkManager = null;
+    
+    // --- Utilitaires ---
+    const showAlert = (type, message, duration = 5000) => {
       const alert = document.createElement('div');
       alert.className = `alert alert-${type}`;
       alert.innerHTML = `<strong>${type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}</strong> ${message}`;
       elements.alertContainer.appendChild(alert);
-      
-      setTimeout(() => {
-        alert.remove();
-      }, duration);
-    }
+      setTimeout(() => alert.style.opacity = '0', duration - 500);
+      setTimeout(() => alert.remove(), duration);
+    };
 
-    function formatDate(timestamp) {
-      if (!timestamp) return 'Jamais';
+    const formatDate = (timestamp) => {
+      if (!timestamp) return 'N/A';
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
+      return date.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
 
-    function formatRole(role) {
+    const formatRole = (role) => {
       const roleMap = {
-        admin: { text: '👨‍⚕️ Médecin', class: 'role-admin' },
+        admin: { text: '👨‍⚕️ Médecin/Admin', class: 'role-admin' },
         vendeuse: { text: '🛒 Vendeuse', class: 'role-moderator' },
         moderator: { text: '🛡️ Modérateur', class: 'role-moderator' },
         user: { text: '👤 Utilisateur', class: 'role-user' }
       };
-      const roleInfo = roleMap[role] || roleMap.user;
-      
-      const isNonStandard = !['admin', 'vendeuse', 'moderator', 'user'].includes(role);
-      const badge = `<span class="role-badge ${roleInfo.class}">${roleInfo.text}${isNonStandard ? ' ⚠️' : ''}</span>`;
-      
-      return badge;
-    }
-
-    function formatCompany(company, role) {
-      if (!company) return '';
-      
-      const icon = role === 'owner' ? '👑' : '🏢';
-      return `<span class="pill" style="background: rgba(59,130,246,0.2); color: #3b82f6; font-size: 10px;">${icon} ${company}</span>`;
-    }
-
-    function getUserInitials(user) {
-      if (user.displayName) {
-        return user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-      }
-      if (user.email) {
-        return user.email.substring(0, 2).toUpperCase();
-      }
-      return '??';
-    }
-
-    function setConnectionStatus(status) {
-      const statusMap = {
-        connected: { dot: 'status-dot', text: 'Connecté', color: 'var(--ok)' },
-        connecting: { dot: 'status-dot connecting', text: 'Connexion...', color: 'var(--warning)' },
-        reconnecting: { dot: 'status-dot reconnecting', text: 'Reconnexion...', color: '#ff6b35' },
-        offline: { dot: 'status-dot offline', text: 'Hors ligne', color: 'var(--bad)' }
-      };
-      
-      const statusInfo = statusMap[status] || statusMap.offline;
-      elements.connectionDot.className = statusInfo.dot;
-      elements.connectionStatus.textContent = statusInfo.text;
-      elements.connectionStatus.style.color = statusInfo.color;
-    }
-
-    // Fonctions pour les avertissements de paiement
-    function getPaymentWarningStatus(user) {
-      if (!user.paymentWarning) {
-        return null;
-      }
-      
-      const now = new Date();
-      const expiryDate = new Date(user.paymentWarning.expiryDate);
-      
-      if (now > expiryDate) {
-        return 'expired';
-      }
-      
-      return 'active';
-    }
-
-    function formatPaymentWarning(user) {
-      const warningStatus = getPaymentWarningStatus(user);
-      
-      if (!warningStatus) {
-        return '';
-      }
-      
-      const now = new Date();
-      const expiryDate = new Date(user.paymentWarning.expiryDate);
-      const timeLeft = expiryDate - now;
-      
-      if (warningStatus === 'expired') {
-        return `<div class="payment-warning-badge expired-warning">⏰ Délai expiré</div>`;
-      }
-      
-      const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-      
-      let timeDisplay = '';
-      if (days > 0) {
-        timeDisplay = `${days}j ${hours}h`;
-      } else if (hours > 0) {
-        timeDisplay = `${hours}h ${minutes}m`;
+      const { text, class: className } = roleMap[role] || roleMap.user;
+      return `<span class="role-badge ${className}">${text}</span>`;
+    };
+    
+    // --- Logique principale ---
+    
+    /**
+     * Met à jour l'interface en fonction de l'état de l'utilisateur (connecté/déconnecté, admin/non-admin)
+     */
+    const updateUI = (user) => {
+      if (user) {
+        currentUser = user;
+        isAdmin = user.email === ADMIN_EMAIL;
+        
+        elements.loginForm.classList.add('hidden');
+        elements.userInfo.classList.remove('hidden');
+        elements.loginPrompt.classList.add('hidden');
+        
+        elements.userEmail.textContent = user.email;
+        elements.userAvatar.textContent = user.email.substring(0, 2).toUpperCase();
+        
+        if (isAdmin) {
+          elements.adminInterface.classList.remove('hidden');
+          elements.statsCard.classList.remove('hidden');
+          elements.logsCard.classList.remove('hidden');
+          listenToUsers();
+          listenToLogs();
+        } else {
+          elements.adminInterface.classList.add('hidden');
+          showAlert('warning', "Accès non autorisé. Seuls les administrateurs peuvent voir cette page.");
+        }
       } else {
-        timeDisplay = `${minutes}m`;
-      }
-      
-      return `<div class="payment-warning-badge countdown-timer">💰 ${timeDisplay}</div>`;
-    }
-
-    // NOUVELLE FONCTION SIMPLE POUR L'AVERTISSEMENT DE PAIEMENT
-    window.handleSimplePaymentWarning = async (uid) => {
-      console.log('🚨 Avertissement de paiement simple pour:', uid);
-      
-      if (!uid || uid === 'undefined') {
-        showAlert('error', 'Erreur: ID utilisateur invalide');
-        return;
-      }
-      
-      const user = allUsers.find(u => u.uid === uid);
-      if (!user) {
-        showAlert('error', 'Utilisateur non trouvé');
-        return;
-      }
-      
-      // Confirmation simple
-      const userName = user.displayName || user.email.split('@')[0];
-      const confirmed = confirm(`🚨 AVERTISSEMENT DE PAIEMENT\n\nEnvoyer un avertissement de paiement à ${userName} ?\n\nMessage : "Votre accès sera suspendu sous 24h si le paiement n'est pas effectué. Risque de perte de données."`);
-      
-      if (!confirmed) {
-        return;
-      }
-      
-      try {
-        // Créer l'avertissement avec 24h de délai
-        const expiryDate = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 heures
-        const warningMessage = `🚨 AVERTISSEMENT DE PAIEMENT\n\nVotre accès sera automatiquement suspendu dans 24 heures si votre paiement n'est pas effectué.\n\n⚠️ ATTENTION : Risque de perte de données après suspension.\n\nMerci de régulariser votre situation rapidement.\n\nL'équipe Anapharmo`;
+        currentUser = null;
+        isAdmin = false;
         
-        await networkManager.executeWithRetry(async () => {
-          // Mettre à jour l'utilisateur
-          await updateDoc(doc(db, 'users', uid), {
-            paymentWarning: {
-              issuedAt: serverTimestamp(),
-              expiryDate: expiryDate.toISOString(),
-              duration: 24, // 24 heures
-              message: warningMessage,
-              issuedBy: currentUser.uid,
-              issuedByEmail: currentUser.email,
-              status: 'active',
-              type: 'simple' // Marqueur pour différencier les avertissements simples
-            },
-            updatedAt: serverTimestamp()
-          });
-          
-          // Créer le log
-          await addDoc(collection(db, 'admin_logs'), {
-            action: 'SIMPLE_PAYMENT_WARNING_SENT',
-            adminUid: currentUser.uid,
-            adminEmail: currentUser.email,
-            targetUid: uid,
-            details: {
-              userEmail: user.email,
-              userName: userName,
-              duration: '24 heures',
-              expiryDate: expiryDate.toISOString(),
-              message: 'Avertissement de paiement standard - suspension sous 24h',
-              automaticSuspension: true,
-              warningType: 'simple'
-            },
-            timestamp: serverTimestamp()
-          });
-        });
+        elements.loginForm.classList.remove('hidden');
+        elements.userInfo.classList.add('hidden');
+        elements.loginPrompt.classList.remove('hidden');
+        elements.adminInterface.classList.add('hidden');
+        elements.statsCard.classList.add('hidden');
+        elements.logsCard.classList.add('hidden');
         
-        showAlert('success', `🚨 Avertissement de paiement envoyé à ${userName}. Suspension automatique dans 24h.`);
-        
-        // Actualiser l'affichage
-        setTimeout(() => {
-          filterAndDisplayUsers();
-        }, 1000);
-        
-      } catch (error) {
-        console.error('❌ Erreur lors de l\'envoi de l\'avertissement:', error);
-        showAlert('error', 'Erreur lors de l\'envoi de l\'avertissement: ' + error.message);
+        if (unsubscribeUsers) unsubscribeUsers();
+        if (unsubscribeLogs) unsubscribeLogs();
+        allUsers = [];
+        elements.usersTable.innerHTML = '';
       }
     };
+    
+    /**
+     * Affiche les utilisateurs dans le tableau, en appliquant les filtres actifs
+     * (inclut bouton d'avertissement togglable)
+     */
+    const renderUsers = () => {
+      if (!isAdmin) return;
 
-    // Fonction pour créer automatiquement le profil admin
-    async function createAdminProfile(user) {
-      return networkManager.executeWithRetry(async () => {
-        console.log("🔧 Création automatique du profil administrateur...");
-        
-        const adminData = {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || 'Médecin Principal',
-          photoURL: user.photoURL || null,
-          phoneNumber: user.phoneNumber || null,
-          role: 'admin',
-          disabled: false,
-          isAdmin: true,
-          company: 'Ma Société',
-          companyRole: 'owner',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
-          autoCreated: true,
-          autoCreatedAt: new Date().toISOString()
-        };
-        
-        await setDoc(doc(db, 'users', user.uid), adminData, { merge: true });
-        console.log("✅ Profil administrateur créé automatiquement");
-        
-        await createExampleUsers();
-        return true;
-      });
-    }
-
-    // Créer des utilisateurs d'exemple avec retry
-    async function createExampleUsers() {
-      return networkManager.executeWithRetry(async () => {
-        const existingExample = await getDocs(query(collection(db, 'users'), where('email', '==', 'sara@gmail.com'), limit(1)));
-        
-        if (existingExample.empty) {
-          console.log("📝 Création d'utilisateurs d'exemple...");
-          
-          await setDoc(doc(db, 'users', 'example-user-sara'), {
-            uid: 'example-user-sara',
-            email: 'sara@gmail.com',
-            displayName: 'Sara Vendeuse',
-            role: 'vendeuse',
-            disabled: false,
-            company: 'Ma Société',
-            companyRole: 'employee',
-            managedBy: currentUser?.uid,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            isExample: true
-          });
-          
-          await setDoc(doc(db, 'users', 'example-user-test'), {
-            uid: 'example-user-test',
-            email: 'test@example.com',
-            displayName: 'Utilisateur Test',
-            role: 'moderator',
-            disabled: true,
-            company: 'Autre Société',
-            companyRole: 'employee',
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            isExample: true
-          });
-          
-          console.log("✅ Utilisateurs d'exemple créés");
-        }
-      });
-    }
-
-    // Gestion de l'authentification avec retry
-    elements.loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const email = elements.email.value.trim();
-      const password = elements.password.value.trim();
-      
-      if (!email || !password) {
-        showAlert('error', 'Veuillez remplir tous les champs');
-        return;
-      }
-
-      elements.loginBtn.disabled = true;
-      elements.loginBtn.textContent = 'Connexion...';
-      setConnectionStatus('connecting');
-
-      try {
-        await networkManager.executeWithRetry(async () => {
-          await signInWithEmailAndPassword(auth, email, password);
-        });
-        
-        showAlert('success', 'Connexion réussie');
-        elements.email.value = '';
-        elements.password.value = '';
-      } catch (error) {
-        console.error('Erreur de connexion:', error);
-        
-        let errorMessage = 'Erreur de connexion';
-        switch (error.code) {
-          case 'auth/invalid-credential':
-          case 'auth/wrong-password':
-          case 'auth/user-not-found':
-            errorMessage = 'Email ou mot de passe incorrect';
-            break;
-          case 'auth/too-many-requests':
-            errorMessage = 'Trop de tentatives. Réessayez plus tard';
-            break;
-          case 'auth/network-request-failed':
-            errorMessage = 'Problème de connexion réseau';
-            break;
-          case 'auth/invalid-email':
-            errorMessage = 'Adresse email invalide';
-            break;
-          default:
-            errorMessage = `Erreur: ${error.message}`;
-        }
-        
-        showAlert('error', errorMessage);
-        setConnectionStatus('offline');
-      } finally {
-        elements.loginBtn.disabled = false;
-        elements.loginBtn.textContent = 'Connexion';
-      }
-    });
-
-    elements.logoutBtn.addEventListener('click', async () => {
-      try {
-        await signOut(auth);
-        showAlert('success', 'Déconnexion réussie');
-      } catch (error) {
-        showAlert('error', 'Erreur lors de la déconnexion');
-      }
-    });
-
-    // Bouton pour toggler les tests de connectivité
-    elements.toggleNetworkTestBtn.addEventListener('click', () => {
-      if (networkManager.enableNetworkTesting) {
-        networkManager.disableNetworkTesting();
-        elements.toggleNetworkTestBtn.textContent = '🌐 Réactiver tests réseau';
-        elements.toggleNetworkTestBtn.className = 'success';
-        showAlert('info', 'Tests de connectivité désactivés');
-      } else {
-        networkManager.enableNetworkTesting();
-        elements.toggleNetworkTestBtn.textContent = '🌐 Désactiver tests réseau';
-        elements.toggleNetworkTestBtn.className = 'warning';
-        showAlert('info', 'Tests de connectivité réactivés');
-      }
-    });
-
-    // Bouton pour créer le profil admin manuellement
-    elements.createAdminProfileBtn.addEventListener('click', async () => {
-      if (!currentUser) return;
-      
-      elements.createAdminProfileBtn.disabled = true;
-      elements.createAdminProfileBtn.textContent = 'Création...';
-      
-      try {
-        await createAdminProfile(currentUser);
-        showAlert('success', 'Profil administrateur créé avec succès !');
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-        
-      } catch (error) {
-        showAlert('error', 'Erreur lors de la création du profil admin');
-      } finally {
-        elements.createAdminProfileBtn.disabled = false;
-        elements.createAdminProfileBtn.textContent = '👑 Créer mon profil admin';
-      }
-    });
-
-    // Fonction pour nettoyer les données corrompues avec retry
-    async function cleanupCorruptedData() {
-      return networkManager.executeWithRetry(async () => {
-        console.log('🧹 Démarrage du nettoyage des données...');
-        
-        const allDocsSnapshot = await getDocs(collection(db, 'users'));
-        let fixedCount = 0;
-        let deletedCount = 0;
-        
-        for (const docSnap of allDocsSnapshot.docs) {
-          const data = docSnap.data();
-          const docId = docSnap.id;
-          
-          if (!data.uid || data.uid === 'undefined' || data.uid === null) {
-            if (data.email) {
-              await updateDoc(doc(db, 'users', docId), {
-                uid: docId,
-                updatedAt: serverTimestamp(),
-                fixedBy: 'cleanup_function',
-                fixedAt: serverTimestamp()
-              });
-              fixedCount++;
-            } else {
-              await updateDoc(doc(db, 'users', docId), {
-                deleted: true,
-                deletedReason: 'corrupted_data',
-                deletedAt: serverTimestamp(),
-                deletedBy: 'cleanup_function'
-              });
-              deletedCount++;
-            }
-          }
-          
-          if (data.role && !['admin', 'moderator', 'user', 'vendeuse'].includes(data.role)) {
-            await updateDoc(doc(db, 'users', docId), {
-              role: 'user',
-              originalRole: data.role,
-              updatedAt: serverTimestamp()
-            });
-            fixedCount++;
-          }
-        }
-        
-        await setDoc(doc(db, 'admin_logs', `cleanup_${Date.now()}`), {
-          action: 'DATA_CLEANUP',
-          adminUid: currentUser.uid,
-          adminEmail: currentUser.email,
-          details: {
-            totalDocuments: allDocsSnapshot.docs.length,
-            fixedDocuments: fixedCount,
-            deletedDocuments: deletedCount
-          },
-          timestamp: serverTimestamp()
-        });
-        
-        showAlert('success', `Nettoyage terminé: ${fixedCount} réparés, ${deletedCount} supprimés`);
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      });
-    }
-
-    // Bouton pour nettoyer les données
-    elements.cleanupDataBtn.addEventListener('click', async () => {
-      if (!confirm('⚠️ Êtes-vous sûr de vouloir nettoyer les données corrompues ?\n\nCela va :\n- Réparer les UID manquants\n- Normaliser les rôles\n- Supprimer les données invalides')) {
-        return;
-      }
-      
-      elements.cleanupDataBtn.disabled = true;
-      elements.cleanupDataBtn.textContent = 'Nettoyage...';
-      
-      try {
-        await cleanupCorruptedData();
-      } catch (error) {
-        console.error('❌ Erreur lors du nettoyage:', error);
-        showAlert('error', 'Erreur lors du nettoyage des données');
-      } finally {
-        elements.cleanupDataBtn.disabled = false;
-        elements.cleanupDataBtn.textContent = '🧹 Nettoyer les données';
-      }
-    });
-
-    // Bouton pour modifier la société
-    elements.editCompanyBtn.addEventListener('click', async () => {
-      if (!currentUser) return;
-      
-      try {
-        const userDoc = await networkManager.executeWithRetry(async () => {
-          return await getDoc(doc(db, 'users', currentUser.uid));
-        });
-        
-        const currentCompany = userDoc.exists() ? userDoc.data().company || '' : '';
-        
-        elements.companyNameInput.value = currentCompany;
-        elements.companyModal.classList.remove('hidden');
-        elements.companyNameInput.focus();
-        
-      } catch (error) {
-        console.error('Erreur lors du chargement de la société:', error);
-        elements.companyNameInput.value = '';
-        elements.companyModal.classList.remove('hidden');
-      }
-    });
-
-    // Gestionnaires de la modale de société
-    elements.companyCancel.addEventListener('click', () => {
-      elements.companyModal.classList.add('hidden');
-    });
-
-    elements.companyConfirm.addEventListener('click', async () => {
-      const newCompanyName = elements.companyNameInput.value.trim();
-      
-      if (!newCompanyName) {
-        showAlert('error', 'Veuillez entrer un nom de société');
-        return;
-      }
-      
-      elements.companyConfirm.disabled = true;
-      elements.companyConfirm.textContent = 'Enregistrement...';
-      
-      try {
-        await networkManager.executeWithRetry(async () => {
-          await updateDoc(doc(db, 'users', currentUser.uid), {
-            company: newCompanyName,
-            companyRole: 'owner',
-            updatedAt: serverTimestamp()
-          });
-          
-          const vendeusesQuery = query(
-            collection(db, 'users'), 
-            where('managedBy', '==', currentUser.uid),
-            where('role', '==', 'vendeuse')
-          );
-          
-          const vendeusesSnapshot = await getDocs(vendeusesQuery);
-          const updatePromises = vendeusesSnapshot.docs.map(vendeuseDoc => 
-            updateDoc(doc(db, 'users', vendeuseDoc.id), {
-              company: newCompanyName,
-              updatedAt: serverTimestamp()
-            })
-          );
-          
-          await Promise.all(updatePromises);
-          
-          await setDoc(doc(db, 'admin_logs', `company_update_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`), {
-            action: 'COMPANY_NAME_UPDATED',
-            adminUid: currentUser.uid,
-            adminEmail: currentUser.email,
-            details: {
-              newCompanyName: newCompanyName,
-              vendeuseUpdated: vendeusesSnapshot.docs.length
-            },
-            timestamp: serverTimestamp()
-          });
-          
-          return vendeusesSnapshot.docs.length;
-        });
-        
-        showAlert('success', `Société "${newCompanyName}" mise à jour avec succès !`);
-        elements.companyModal.classList.add('hidden');
-        
-      } catch (error) {
-        console.error('❌ Erreur lors de la mise à jour de la société:', error);
-        showAlert('error', 'Erreur lors de la mise à jour de la société');
-      } finally {
-        elements.companyConfirm.disabled = false;
-        elements.companyConfirm.textContent = 'Enregistrer';
-      }
-    });
-
-    // Support de la touche Entrée dans l'input de société
-    elements.companyNameInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        elements.companyConfirm.click();
-      }
-    });
-
-    // Gestion des états d'authentification
-    onAuthStateChanged(auth, async (user) => {
-      if (unsubscribeUsers) {
-        unsubscribeUsers();
-        unsubscribeUsers = null;
-      }
-      if (unsubscribeLogs) {
-        unsubscribeLogs();
-        unsubscribeLogs = null;
-      }
-
-      if (!user) {
-        showLoggedOutState();
-        return;
-      }
-
-      currentUser = user;
-      isAdmin = user.email === ADMIN_EMAIL;
-      
-      if (isAdmin) {
-        console.log(`✅ Accès administrateur accordé pour: ${user.email}`);
-        
-        try {
-          const userDoc = await networkManager.executeWithRetry(async () => {
-            return await getDoc(doc(db, 'users', user.uid));
-          });
-          
-          if (!userDoc.exists() || userDoc.data().role !== 'admin') {
-            console.log("🔧 Profil admin non trouvé, création automatique...");
-            await createAdminProfile(user);
-          }
-        } catch (error) {
-          console.log("Erreur lors de la vérification du profil, création automatique...");
-          try {
-            await createAdminProfile(user);
-          } catch (createError) {
-            console.error("Erreur lors de la création du profil:", createError);
-          }
-        }
-        
-        showAdminState();
-        await loadAdminData();
-      } else {
-        showUnauthorizedState();
-      }
-    });
-
-    function showLoggedOutState() {
-      elements.loginForm.classList.remove('hidden');
-      elements.userInfo.classList.add('hidden');
-      elements.loginPrompt.classList.remove('hidden');
-      elements.adminInterface.classList.add('hidden');
-      elements.statsCard.classList.add('hidden');
-      elements.logsCard.classList.add('hidden');
-      elements.statusMessage.innerHTML = '';
-      
-      setConnectionStatus('offline');
-      currentUser = null;
-      isAdmin = false;
-    }
-
-    function showUnauthorizedState() {
-      elements.loginForm.classList.add('hidden');
-      elements.userInfo.classList.remove('hidden');
-      elements.loginPrompt.classList.add('hidden');
-      elements.adminInterface.classList.add('hidden');
-      elements.statsCard.classList.add('hidden');
-      elements.logsCard.classList.add('hidden');
-      
-      elements.userEmail.textContent = currentUser.email;
-      elements.userAvatar.textContent = getUserInitials(currentUser);
-      
-      elements.statusMessage.innerHTML = `
-        <div class="alert alert-error">
-          <strong>⚠️ Accès refusé</strong><br>
-          Droits administrateur requis. Connecté en tant que: <strong>${currentUser.email}</strong><br>
-          <small>Seul ${ADMIN_EMAIL} peut accéder à cette interface.</small>
-        </div>
-      `;
-      
-      setConnectionStatus('connected');
-    }
-
-    function showAdminState() {
-      elements.loginForm.classList.add('hidden');
-      elements.userInfo.classList.remove('hidden');
-      elements.loginPrompt.classList.add('hidden');
-      elements.adminInterface.classList.remove('hidden');
-      elements.statsCard.classList.remove('hidden');
-      elements.logsCard.classList.remove('hidden');
-      
-      elements.userEmail.textContent = currentUser.email;
-      elements.userAvatar.textContent = getUserInitials(currentUser);
-      
-      elements.statusMessage.innerHTML = `
-        <div class="alert alert-success">
-          <strong>✅ Accès administrateur accordé</strong><br>
-          Connecté en tant qu'administrateur: <strong>${currentUser.email}</strong>
-        </div>
-      `;
-      
-      setConnectionStatus('connected');
-    }
-
-    // Chargement des données admin
-    async function loadAdminData() {
-      try {
-        await loadStats();
-        listenToUsers();
-        listenToLogs();
-      } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-        showAlert('error', 'Erreur lors du chargement des données');
-      }
-    }
-
-    async function loadStats() {
-      try {
-        const usersSnapshot = await networkManager.executeWithRetry(async () => {
-          return await getDocs(collection(db, 'users'));
-        });
-        
-        const users = usersSnapshot.docs.map(doc => doc.data());
-        
-        const stats = {
-          totalUsers: users.length,
-          activeUsers: users.filter(u => !u.disabled).length,
-          disabledUsers: users.filter(u => u.disabled).length,
-          warnedUsers: users.filter(u => u.paymentWarning && getPaymentWarningStatus(u) === 'active').length,
-          adminUsers: users.filter(u => u.role === 'admin').length
-        };
-        
-        updateStatsDisplay(stats);
-      } catch (error) {
-        console.error('Erreur lors du chargement des statistiques:', error);
-        updateStatsDisplay({
-          totalUsers: '-',
-          activeUsers: '-', 
-          disabledUsers: '-',
-          warnedUsers: '-',
-          adminUsers: '-'
-        });
-      }
-    }
-
-    function updateStatsDisplay(stats) {
-      elements.totalUsers.textContent = stats.totalUsers;
-      elements.activeUsers.textContent = stats.activeUsers;
-      elements.disabledUsers.textContent = stats.disabledUsers;
-      elements.warnedUsers.textContent = stats.warnedUsers;
-      elements.adminUsers.textContent = stats.adminUsers;
-    }
-
-    function updateCompanyFilter() {
-      const companies = [...new Set(allUsers.map(user => user.company).filter(Boolean))];
-      
-      elements.companyFilter.innerHTML = '<option value="">Toutes les sociétés</option>' +
-        companies.map(company => `<option value="${company}">${company}</option>`).join('');
-    }
-
-    function listenToUsers() {
-      if (unsubscribeUsers) {
-        unsubscribeUsers();
-      }
-      
-      try {
-        const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-        unsubscribeUsers = onSnapshot(q, 
-          (snapshot) => {
-            console.log(`📋 Données reçues: ${snapshot.docs.length} utilisateurs`);
-            setConnectionStatus('connected');
-            lastDataUpdate = Date.now();
-            
-            allUsers = snapshot.docs
-              .map(doc => {
-                const data = doc.data();
-                return {
-                  id: doc.id,
-                  uid: data.uid || doc.id,
-                  ...data
-                };
-              })
-              .filter(user => {
-                return user.uid && 
-                       user.uid !== 'undefined' && 
-                       user.uid !== null &&
-                       user.email;
-              });
-            
-            const stats = {
-              totalUsers: allUsers.length,
-              activeUsers: allUsers.filter(u => !u.disabled).length,
-              disabledUsers: allUsers.filter(u => u.disabled).length,
-              warnedUsers: allUsers.filter(u => u.paymentWarning && getPaymentWarningStatus(u) === 'active').length,
-              adminUsers: allUsers.filter(u => u.role === 'admin').length
-            };
-            updateStatsDisplay(stats);
-            
-            updateCompanyFilter();
-            filterAndDisplayUsers();
-          },
-          (error) => {
-            console.error('❌ Erreur listener Firestore:', error);
-            setConnectionStatus('reconnecting');
-            
-            setTimeout(() => {
-              if (isAdmin && Date.now() - lastDataUpdate > 30000) {
-                console.log('🔄 Tentative de reconnexion...');
-                listenToUsers();
-              }
-            }, 5000);
-          }
-        );
-      } catch (error) {
-        console.error('❌ Erreur lors de la création du listener:', error);
-        setConnectionStatus('offline');
-      }
-    }
-
-    function listenToLogs() {
-      if (unsubscribeLogs) {
-        unsubscribeLogs();
-      }
-      
-      try {
-        const q = query(collection(db, 'admin_logs'), orderBy('timestamp', 'desc'), limit(20));
-        unsubscribeLogs = onSnapshot(q, 
-          (snapshot) => {
-            const logs = snapshot.docs.map(doc => doc.data());
-            displayLogs(logs);
-          },
-          (error) => {
-            console.error('Erreur listener logs:', error);
-          }
-        );
-      } catch (error) {
-        console.log('Collection admin_logs non disponible');
-        elements.logsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">Logs non disponibles</div>';
-      }
-    }
-
-    function displayLogs(logs) {
-      if (logs.length === 0) {
-        elements.logsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">Aucune activité récente</div>';
-        return;
-      }
-
-      elements.logsContainer.innerHTML = logs.map(log => `
-        <div class="log-entry">
-          <strong>${log.action || 'Action inconnue'}</strong>
-          ${log.targetUid ? `- Utilisateur: ${log.targetUid}` : ''}
-          <div class="log-timestamp">${formatDate(log.timestamp)}</div>
-        </div>
-      `).join('');
-    }
-
-    function filterAndDisplayUsers() {
-      let filteredUsers = [...allUsers];
-      
       const searchTerm = elements.searchUsers.value.toLowerCase();
-      if (searchTerm) {
-        filteredUsers = filteredUsers.filter(user => 
-          (user.email || '').toLowerCase().includes(searchTerm) ||
-          (user.displayName || '').toLowerCase().includes(searchTerm) ||
-          (user.company || '').toLowerCase().includes(searchTerm) ||
-          user.uid.toLowerCase().includes(searchTerm)
-        );
-      }
-      
       const roleFilter = elements.roleFilter.value;
-      if (roleFilter) {
-        filteredUsers = filteredUsers.filter(user => (user.role || 'user') === roleFilter);
-      }
-      
       const statusFilter = elements.statusFilter.value;
-      if (statusFilter) {
-        if (statusFilter === 'active') {
-          filteredUsers = filteredUsers.filter(user => !user.disabled);
-        } else if (statusFilter === 'disabled') {
-          filteredUsers = filteredUsers.filter(user => user.disabled);
-        } else if (statusFilter === 'warned') {
-          filteredUsers = filteredUsers.filter(user => 
-            user.paymentWarning && getPaymentWarningStatus(user) === 'active'
-          );
-        }
-      }
-      
-      const companyFilter = elements.companyFilter.value;
-      if (companyFilter) {
-        filteredUsers = filteredUsers.filter(user => user.company === companyFilter);
-      }
-      
-      displayUsers(filteredUsers);
-    }
 
-    function displayUsers(users) {
-      console.log(`👥 Affichage de ${users.length} utilisateurs`);
-      
-      if (users.length === 0) {
+      const filteredUsers = allUsers.filter(user => {
+        const searchMatch =
+          user.email.toLowerCase().includes(searchTerm) ||
+          (user.displayName && user.displayName.toLowerCase().includes(searchTerm));
+        const roleMatch = !roleFilter || user.role === roleFilter;
+        const statusMatch =
+          !statusFilter ||
+          (statusFilter === 'active' && user.status === 'active') ||
+          (statusFilter === 'disabled' && user.status === 'disabled') ||
+          (statusFilter === 'warned' && user.paymentWarning && user.paymentWarning.status === 'active');
+        return searchMatch && roleMatch && statusMatch;
+      });
+
+      if (filteredUsers.length === 0) {
         elements.usersTable.innerHTML = `
           <tr>
             <td colspan="7" style="text-align: center; padding: 40px; color: var(--muted);">
-              Aucun utilisateur trouvé
+              Aucun utilisateur trouvé.
             </td>
-          </tr>
-        `;
+          </tr>`;
         return;
       }
 
-      const userRows = users.map(user => {
-        const isCurrentUser = user.uid === currentUser?.uid;
-        const paymentWarning = formatPaymentWarning(user);
-        const hasActiveWarning = getPaymentWarningStatus(user) === 'active';
-        
-        return `
-        <tr>
-          <td>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div class="user-avatar" style="width: 24px; height: 24px; font-size: 10px;">
-                ${getUserInitials(user)}
-              </div>
-              <div>
-                <div style="font-weight: 500;">${user.displayName || 'Sans nom'}</div>
-                ${paymentWarning}
-                ${user.autoCreated ? '<span style="color: var(--warning); font-size: 10px;">(Auto)</span>' : ''}
-                ${user.isExample ? '<span style="color: var(--muted); font-size: 10px;">(Exemple)</span>' : ''}
-              </div>
-            </div>
-          </td>
-          <td>${user.email || '-'}</td>
-          <td>${formatCompany(user.company, user.companyRole)}</td>
-          <td>${formatRole(user.role || 'user')}</td>
-          <td class="${user.disabled ? 'status-disabled' : hasActiveWarning ? 'status-warned' : 'status-active'}">
-            ${user.disabled ? '🔒 Désactivé' : hasActiveWarning ? '⚠️ Avertissement' : '✅ Actif'}
-          </td>
-          <td>${formatDate(user.createdAt)}</td>
-          <td>
-            <div class="actions">
-              <button onclick="handleToggleUser('${user.uid}', ${user.disabled})" 
-                      title="${user.disabled ? 'Activer' : 'Désactiver'}"
-                      ${isCurrentUser ? 'disabled' : ''}>
-                ${user.disabled ? '🔓' : '🔒'}
-              </button>
-              <button onclick="handleSimplePaymentWarning('${user.uid}')"
-                      title="⚠️ AVERTISSEMENT DE PAIEMENT"
-                      class="payment"
-                      ${isCurrentUser ? 'disabled' : ''}>
-                🚨
-              </button>
-              <button onclick="handleChangeRole('${user.uid}', '${user.role || 'user'}')"
-                      title="Changer le rôle"
-                      ${isCurrentUser ? 'disabled' : ''}>
-                👤
-              </button>
-              ${user.role === 'vendeuse' ? 
-                `<button onclick="handleAssignToCompany('${user.uid}')" title="Assigner à ma société">🏢</button>` : 
-                ''
-              }
-              <button onclick="handleDeleteUser('${user.uid}')" class="danger"
-                      title="Supprimer"
-                      ${isCurrentUser ? 'disabled' : ''}>
-                🗑️
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
+      elements.usersTable.innerHTML = filteredUsers
+        .map(user => {
+          const isWarned = !!(user.paymentWarning && user.paymentWarning.status === 'active');
+          const warnedBadge = isWarned ? `<span class="payment-warning-badge">Averti</span>` : '';
+          return `
+            <tr>
+              <td>${user.displayName || 'N/A'} ${warnedBadge}</td>
+              <td>${user.email}</td>
+              <td>${user.companyName || 'N/A'}</td>
+              <td>${formatRole(user.role)}</td>
+              <td class="${user.status === 'active' ? 'status-active' : 'status-disabled'}">${user.status}</td>
+              <td>${formatDate(user.createdAt)}</td>
+              <td class="actions">
+                <button class="${user.status === 'active' ? 'danger' : 'success'}"
+                        onclick="window.toggleUserStatus('${user.uid}')">
+                  ${user.status === 'active' ? '🚫' : '✅'}
+                </button>
+                <button class="${isWarned ? 'payment' : 'warning'}"
+                        title="${isWarned ? 'Désactiver l’avertissement' : 'Activer un avertissement 24h'}"
+                        onclick="window.togglePaymentWarning('${user.uid}')">
+                  ${isWarned ? '💸 ON' : '💰 OFF'}
+                </button>
+                <button class="info" onclick="window.openRoleModal('${user.uid}')">✏️</button>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+    };
+    
+    /**
+     * Met à jour les cartes de statistiques
+     */
+    const updateStats = () => {
+      elements.totalUsers.textContent = allUsers.length;
+      elements.activeUsers.textContent = allUsers.filter(u => u.status === 'active').length;
+      elements.disabledUsers.textContent = allUsers.filter(u => u.status === 'disabled').length;
+      elements.adminUsers.textContent = allUsers.filter(u => u.role === 'admin').length;
+      elements.warnedUsers.textContent = allUsers.filter(u => u.paymentWarning && u.paymentWarning.status === 'active').length;
+    };
+    
+    /**
+     * Écoute les changements dans la collection 'users' de Firestore
+     */
+    const listenToUsers = () => {
+      if (unsubscribeUsers) unsubscribeUsers(); // Évite les listeners multiples
+      const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+      unsubscribeUsers = onSnapshot(q, (snapshot) => {
+        allUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+        renderUsers();
+        updateStats();
+      }, (error) => {
+        console.error("Erreur d'écoute Firestore (users):", error);
+        showAlert('error', "Impossible de charger les utilisateurs en temps réel.");
       });
-
-      elements.usersTable.innerHTML = userRows.join('');
-      console.log('✅ Tableau des utilisateurs mis à jour');
-    }
-
-    // Gestionnaires d'actions sécurisés avec retry
-    window.handleToggleUser = (uid, currentDisabled) => {
-      if (!uid || uid === 'undefined') {
-        showAlert('error', 'Erreur: ID utilisateur invalide');
-        return;
-      }
-      
-      const action = currentDisabled ? 'activer' : 'désactiver';
-      pendingAction = {
-        type: 'toggle',
-        uid: uid,
-        action: currentDisabled ? 'enable' : 'disable'
-      };
-      
-      elements.modalTitle.textContent = `${action.charAt(0).toUpperCase() + action.slice(1)} l'utilisateur`;
-      elements.modalMessage.textContent = `Êtes-vous sûr de vouloir ${action} cet utilisateur ?`;
-      elements.confirmModal.classList.remove('hidden');
+    };
+    
+    /**
+     * Écoute les changements dans la collection 'admin_logs'
+     */
+    const listenToLogs = () => {
+      if (unsubscribeLogs) unsubscribeLogs();
+      const q = query(collection(db, "admin_logs"), orderBy("timestamp", "desc"), limit(50));
+      unsubscribeLogs = onSnapshot(q, (snapshot) => {
+        if(snapshot.empty) {
+          elements.logsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">Aucune activité récente</div>';
+          return;
+        }
+        elements.logsContainer.innerHTML = snapshot.docs.map(doc => {
+          const log = doc.data();
+          return `<div class="log-entry">
+              <span class="log-timestamp">${formatDate(log.timestamp)}</span> - 
+              <strong>${log.adminEmail}</strong>: ${log.details}
+          </div>`;
+        }).join('');
+      }, (error) => {
+        console.error("Erreur d'écoute Firestore (logs):", error);
+      });
     };
 
-    window.handleChangeRole = (uid, currentRole) => {
-      if (!uid || uid === 'undefined') {
-        showAlert('error', 'Erreur: ID utilisateur invalide');
-        return;
-      }
-      
+    // --- Fonctions globales pour les boutons ---
+    
+    window.toggleUserStatus = async (uid) => {
       const user = allUsers.find(u => u.uid === uid);
-      if (!user) {
-        showAlert('error', 'Utilisateur non trouvé');
-        return;
-      }
-      
-      pendingAction = {
-        type: 'role',
-        uid: uid,
-        currentRole: currentRole
-      };
-      
-      elements.roleModalUser.textContent = `Utilisateur: ${user.email}`;
-      elements.newRoleSelect.value = currentRole;
-      elements.roleModal.classList.remove('hidden');
-    };
+      if (!user) return showAlert('error', 'Utilisateur non trouvé.');
 
-    window.handleDeleteUser = (uid) => {
-      if (!uid || uid === 'undefined') {
-        showAlert('error', 'Erreur: ID utilisateur invalide');
-        return;
-      }
+      const newStatus = user.status === 'active' ? 'disabled' : 'active';
+      const action = newStatus === 'disabled' ? 'désactiver' : 'activer';
       
-      pendingAction = {
-        type: 'delete',
-        uid: uid
-      };
-      
-      elements.modalTitle.textContent = 'Supprimer l\'utilisateur';
-      elements.modalMessage.textContent = '⚠️ Cette action est irréversible ! Êtes-vous sûr de vouloir supprimer cet utilisateur ?';
-      elements.confirmModal.classList.remove('hidden');
-    };
-
-    window.handleAssignToCompany = async (uid) => {
-      if (!uid || uid === 'undefined') {
-        showAlert('error', 'Erreur: ID utilisateur invalide');
-        return;
-      }
-      
-      if (!currentUser) {
-        showAlert('error', 'Erreur: Aucun utilisateur connecté');
-        return;
-      }
-      
-      try {
-        await networkManager.executeWithRetry(async () => {
-          const adminDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          if (!adminDoc.exists()) {
-            throw new Error('Profil administrateur non trouvé');
-          }
-          
-          const adminData = adminDoc.data();
-          const companyName = adminData.company || 'Ma Société';
-          
-          await updateDoc(doc(db, 'users', uid), {
-            company: companyName,
-            companyRole: 'employee',
-            managedBy: currentUser.uid,
-            updatedAt: serverTimestamp()
-          });
-          
-          await setDoc(doc(db, 'admin_logs', `assign_company_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`), {
-            action: 'USER_ASSIGNED_TO_COMPANY',
+      if (confirm(`Êtes-vous sûr de vouloir ${action} l'utilisateur ${user.email} ?`)) {
+        try {
+          await updateDoc(doc(db, 'users', uid), { status: newStatus });
+          await addDoc(collection(db, 'admin_logs'), {
+            action: 'USER_STATUS_CHANGED',
             adminUid: currentUser.uid,
             adminEmail: currentUser.email,
             targetUid: uid,
-            details: {
-              company: companyName,
-              assignedRole: 'employee'
-            },
+            targetEmail: user.email,
+            details: `Statut de ${user.email} changé à ${newStatus}.`,
             timestamp: serverTimestamp()
           });
-          
-          return companyName;
+          showAlert('success', `Utilisateur ${action} avec succès.`);
+        } catch (error) {
+          showAlert('error', `Erreur lors de la mise à jour : ${error.message}`);
+        }
+      }
+    };
+    
+    // Active un avertissement 24h (fonction existante utilisée par le toggle)
+    window.handleSimplePaymentWarning = async (uid) => {
+      const user = allUsers.find(u => u.uid === uid);
+      if (!user) return showAlert('error', 'Utilisateur non trouvé.');
+
+      const confirmed = confirm(`🚨 AVERTISSEMENT DE PAIEMENT\n\nEnvoyer un avertissement à ${user.email} ?\n\nL'utilisateur aura 24h pour régulariser sa situation avant que son compte ne soit suspendu.`);
+      if (!confirmed) return;
+
+      try {
+        const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await updateDoc(doc(db, 'users', uid), {
+          paymentWarning: {
+            issuedAt: serverTimestamp(),
+            expiryDate: expiryDate,
+            status: 'active',
+            issuedBy: currentUser.email
+          }
         });
-        
-        showAlert('success', 'Vendeuse assignée avec succès');
-        
+        await addDoc(collection(db, 'admin_logs'), {
+          action: 'PAYMENT_WARNING_SENT',
+          adminUid: currentUser.uid,
+          adminEmail: currentUser.email,
+          targetUid: uid,
+          targetEmail: user.email,
+          details: `Avertissement de paiement envoyé à ${user.email}.`,
+          timestamp: serverTimestamp()
+        });
+        showAlert('success', `Avertissement envoyé à ${user.email}.`);
       } catch (error) {
-        console.error('❌ Erreur lors de l\'assignation:', error);
-        showAlert('error', 'Erreur lors de l\'assignation à la société');
+        showAlert('error', `Erreur lors de l'envoi de l'avertissement: ${error.message}`);
       }
     };
 
-    // Gestionnaires de modales
-    elements.modalCancel.addEventListener('click', () => {
-      elements.confirmModal.classList.add('hidden');
-      pendingAction = null;
-    });
+    // 🔁 Bouton Avertissement TOGGLE (ON/OFF)
+    window.togglePaymentWarning = async (uid) => {
+      const user = allUsers.find(u => u.uid === uid);
+      if (!user) return showAlert('error', 'Utilisateur non trouvé.');
 
-    elements.modalConfirm.addEventListener('click', async () => {
-      if (!pendingAction) return;
-      
-      elements.modalConfirm.disabled = true;
-      elements.modalConfirm.textContent = 'En cours...';
-      
+      const isWarned = !!(user.paymentWarning && user.paymentWarning.status === 'active');
+
       try {
-        await executeAction(pendingAction);
-        showAlert('success', 'Action exécutée avec succès');
-      } catch (error) {
-        console.error('Erreur lors de l\'action:', error);
-        showAlert('error', error.message || 'Une erreur est survenue');
-      } finally {
-        elements.modalConfirm.disabled = false;
-        elements.modalConfirm.textContent = 'Confirmer';
-        elements.confirmModal.classList.add('hidden');
-        pendingAction = null;
-      }
-    });
+        if (isWarned) {
+          // 🔴 Désactiver l’avertissement
+          await updateDoc(doc(db, 'users', uid), {
+            'paymentWarning.status': 'inactive',
+            'paymentWarning.clearedAt': serverTimestamp(),
+            'paymentWarning.clearedBy': currentUser.email,
+          });
 
-    elements.roleCancel.addEventListener('click', () => {
-      elements.roleModal.classList.add('hidden');
-      pendingAction = null;
-    });
+          await addDoc(collection(db, 'admin_logs'), {
+            action: 'PAYMENT_WARNING_DISABLED',
+            adminUid: currentUser.uid,
+            adminEmail: currentUser.email,
+            targetUid: uid,
+            targetEmail: user.email,
+            details: `Avertissement de paiement désactivé pour ${user.email}.`,
+            timestamp: serverTimestamp(),
+          });
 
-    elements.roleConfirm.addEventListener('click', () => {
-      if (!pendingAction) return;
-      
-      const newRole = elements.newRoleSelect.value;
-      pendingAction.newRole = newRole;
-      
-      elements.roleModal.classList.add('hidden');
-      
-      elements.modalTitle.textContent = 'Modifier le rôle';
-      elements.modalMessage.textContent = `Confirmer le changement de rôle vers "${newRole}" ?`;
-      elements.confirmModal.classList.remove('hidden');
-    });
-
-    async function executeAction(action) {
-      return networkManager.executeWithRetry(async () => {
-        if (!action.uid || action.uid === 'undefined') {
-          throw new Error('UID utilisateur invalide');
+          showAlert('success', `Avertissement désactivé pour ${user.email}.`);
+        } else {
+          // 🟡 Activer l’avertissement (24h)
+          await window.handleSimplePaymentWarning(uid);
         }
-        
-        const userRef = doc(db, 'users', action.uid);
-        
-        switch (action.type) {
-          case 'toggle':
-            const newDisabledState = action.action === 'disable';
-            
-            await updateDoc(userRef, {
-              disabled: newDisabledState,
-              updatedAt: serverTimestamp(),
-              lastModifiedBy: currentUser.uid
-            });
-            
-            await setDoc(doc(db, 'admin_logs', `toggle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`), {
-              action: newDisabledState ? 'USER_DISABLED' : 'USER_ENABLED',
-              adminUid: currentUser.uid,
-              adminEmail: currentUser.email,
-              targetUid: action.uid,
-              timestamp: serverTimestamp(),
-              method: 'admin_interface_simple',
-              details: {
-                previousState: !newDisabledState,
-                newState: newDisabledState
-              }
-            });
-            break;
-            
-          case 'role':
-            await updateDoc(userRef, {
-              role: action.newRole,
-              updatedAt: serverTimestamp(),
-              lastModifiedBy: currentUser.uid
-            });
-            
-            await setDoc(doc(db, 'admin_logs', `role_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`), {
-              action: 'USER_ROLE_CHANGED',
-              adminUid: currentUser.uid,
-              adminEmail: currentUser.email,
-              targetUid: action.uid,
-              details: { 
-                previousRole: action.currentRole,
-                newRole: action.newRole 
-              },
-              timestamp: serverTimestamp()
-            });
-            break;
-            
-          case 'delete':
-            await updateDoc(userRef, {
-              deleted: true,
-              disabled: true,
-              deletedAt: serverTimestamp(),
-              deletedBy: currentUser.uid,
-              updatedAt: serverTimestamp()
-            });
-            
-            await setDoc(doc(db, 'admin_logs', `delete_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`), {
-              action: 'USER_DELETED',
-              adminUid: currentUser.uid,
-              adminEmail: currentUser.email,
-              targetUid: action.uid,
-              timestamp: serverTimestamp(),
-              method: 'soft_delete'
-            });
-            break;
-            
-          default:
-            throw new Error(`Action non supportée: ${action.type}`);
+      } catch (error) {
+        showAlert('error', `Erreur: ${error.message}`);
+      }
+    };
+    
+    window.openRoleModal = (uid) => {
+      const user = allUsers.find(u => u.uid === uid);
+      if (!user) return;
+      
+      elements.roleModalUser.textContent = `Utilisateur: ${user.email}`;
+      elements.newRoleSelect.value = user.role || 'user';
+      elements.roleModal.dataset.uid = uid; // Stocker l'UID pour la confirmation
+      elements.roleModal.classList.remove('hidden');
+    };
+
+    // --- Initialisation ---
+    document.addEventListener('DOMContentLoaded', () => {
+      // Logique de connexion
+      elements.loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        elements.loginBtn.disabled = true;
+        elements.loginBtn.textContent = 'Connexion...';
+
+        signInWithEmailAndPassword(auth, elements.email.value, elements.password.value)
+          .catch(error => showAlert('error', `Échec de la connexion : ${error.code === 'auth/invalid-credential' ? 'Identifiants invalides' : error.message}`))
+          .finally(() => {
+            elements.loginBtn.disabled = false;
+            elements.loginBtn.textContent = 'Connexion';
+          });
+      });
+      
+      // Logique de déconnexion
+      elements.logoutBtn.addEventListener('click', () => signOut(auth));
+      
+      // Listeners pour les filtres
+      elements.searchUsers.addEventListener('input', renderUsers);
+      elements.roleFilter.addEventListener('change', renderUsers);
+      elements.statusFilter.addEventListener('change', renderUsers);
+      
+      // Gestion de la modale de rôle
+      elements.roleCancel.addEventListener('click', () => elements.roleModal.classList.add('hidden'));
+      elements.roleConfirm.addEventListener('click', async () => {
+        const uid = elements.roleModal.dataset.uid;
+        const newRole = elements.newRoleSelect.value;
+        const user = allUsers.find(u => u.uid === uid);
+        if (!uid || !user) return;
+
+        try {
+          await updateDoc(doc(db, 'users', uid), { role: newRole });
+          await addDoc(collection(db, 'admin_logs'), {
+            action: 'USER_ROLE_CHANGED',
+            adminUid: currentUser.uid,
+            adminEmail: currentUser.email,
+            targetUid: uid,
+            targetEmail: user.email,
+            details: `Rôle de ${user.email} changé à ${newRole}.`,
+            timestamp: serverTimestamp()
+          });
+          showAlert('success', 'Rôle mis à jour.');
+          elements.roleModal.classList.add('hidden');
+        } catch (error) {
+          showAlert('error', `Erreur: ${error.message}`);
         }
       });
-    }
 
-    // Filtres et recherche avec debouncing
-    let searchTimeout;
-    elements.searchUsers.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(filterAndDisplayUsers, 300);
-    });
-    
-    elements.roleFilter.addEventListener('change', filterAndDisplayUsers);
-    elements.statusFilter.addEventListener('change', filterAndDisplayUsers);
-    elements.companyFilter.addEventListener('change', filterAndDisplayUsers);
-    
-    elements.refreshUsers.addEventListener('click', async () => {
-      try {
-        setConnectionStatus('connecting');
-        await loadStats();
-        showAlert('success', 'Données actualisées');
-        setConnectionStatus('connected');
-      } catch (error) {
-        showAlert('error', 'Erreur lors de l\'actualisation');
-        setConnectionStatus('offline');
-      }
+      // Écouter l'état d'authentification pour démarrer l'app
+      onAuthStateChanged(auth, user => updateUI(user));
     });
 
-    // Fermer les modales en cliquant à l'extérieur
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal')) {
-        e.target.classList.add('hidden');
-        pendingAction = null;
-      }
-    });
-
-    // Gestion des raccourcis clavier
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        elements.confirmModal.classList.add('hidden');
-        elements.roleModal.classList.add('hidden');
-        elements.companyModal.classList.add('hidden');
-        pendingAction = null;
-      }
-    });
-
-    // Nettoyage lors de la fermeture
-    window.addEventListener('beforeunload', () => {
-      if (networkManager.connectionCheckInterval) {
-        clearInterval(networkManager.connectionCheckInterval);
-      }
-      if (unsubscribeUsers) unsubscribeUsers();
-      if (unsubscribeLogs) unsubscribeLogs();
-    });
-
-    // Message de bienvenue dans la console
-    console.log(`
-🔐 Administration Anapharmo - Version Simplifiée
-=============================================
-✅ Interface chargée avec succès
-👤 Email administrateur autorisé: ${ADMIN_EMAIL}
-🔧 Système de contournement activé
-📊 Gestion directe via Firestore
-🚨 Nouveau bouton d'avertissement de paiement simple (🚨)
-🌐 Gestion réseau optimisée avec retry automatique
-🔄 Reconnexion automatique activée
-
-💰 AVERTISSEMENT DE PAIEMENT SIMPLE:
-- Bouton orange 🚨 à côté du bouton de déverrouillage
-- Message standard: "Suspension sous 24h + risque de perte de données"
-- Pas de configuration - envoi direct après confirmation
-- Suspension automatique après 24h
-
-🚀 Plus simple et plus direct que l'ancien système !
-    `);
-
-    // Exposer networkManager globalement pour debug
-    window.networkManager = networkManager;
   </script>
 </body>
 </html>
