@@ -2,8 +2,10 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Administration Sécurisée - Anapharmo</title>
+  <title>Administration SaaS - Anapharmo Multi-tenant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <!-- Favicon inline pour éviter le 404 -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>">
   <style>
     :root {
       --bg: #0b1220;
@@ -37,8 +39,8 @@
     .card { background:var(--panel); border:1px solid #223355; border-radius:12px; padding:16px; margin:16px; box-shadow:0 4px 12px rgba(0,0,0,.3); transition:transform .2s, box-shadow .2s; }
     .card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.4); }
 
-    input,button,select { border-radius:8px; border:1px solid var(--brand2); background:#0e1830; color:#fff; padding:12px 16px; font-size:14px; transition:all .2s; min-height:44px; }
-    input:focus,select:focus { outline:none; border-color:var(--ok); box-shadow:0 0 0 3px rgba(183,255,195,.1); }
+    input,button,select,textarea { border-radius:8px; border:1px solid var(--brand2); background:#0e1830; color:#fff; padding:12px 16px; font-size:14px; transition:all .2s; min-height:44px; }
+    input:focus,select:focus,textarea:focus { outline:none; border-color:var(--ok); box-shadow:0 0 0 3px rgba(183,255,195,.1); }
     button { background:var(--brand); cursor:pointer; font-weight:500; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--brand2); }
     button:hover:not(:disabled){ filter:brightness(1.15); transform:translateY(-1px); }
     button:active{ transform:translateY(0); }
@@ -46,13 +48,22 @@
     button.danger{ background:#dc2626; border-color:#dc2626; }
     button.success{ background:#059669; border-color:#059669; }
     button.warning{ background:#f59e0b; border-color:#f59e0b; }
+    button.info{ background:#3b82f6; border-color:#3b82f6; }
     button.payment{ background:#ff6600; border-color:#ff6600; }
     .hidden{ display:none !important; }
 
     .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
     .search-bar { flex:1; min-width:200px; }
 
-    #usersTableContainer, #logsTableContainer { overflow-x:auto; margin:16px 0; border-radius:8px; border:1px solid var(--line); }
+    .nav-tabs { display:flex; gap:8px; margin-bottom:20px; border-bottom:2px solid var(--line); }
+    .nav-tab { padding:12px 20px; background:transparent; border:none; border-bottom:3px solid transparent; color:var(--muted); cursor:pointer; font-weight:500; }
+    .nav-tab.active { color:var(--ok); border-bottom-color:var(--ok); background:rgba(183,255,195,.1); }
+    .nav-tab:hover:not(.active) { color:var(--text); background:rgba(255,255,255,.05); }
+
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+
+    #usersTableContainer, #logsTableContainer, #invitationsTableContainer, #societesTableContainer { overflow-x:auto; margin:16px 0; border-radius:8px; border:1px solid var(--line); }
     table { width:100%; border-collapse:collapse; min-width:1000px; }
     th,td { border-bottom:1px solid var(--line); padding:12px; text-align:left; font-size:14px; white-space:nowrap; }
     th { background:rgba(26,42,74,.7); font-weight:600; position:sticky; top:0; z-index:10; }
@@ -60,10 +71,25 @@
 
     .status-active{ color:var(--ok); font-weight:500; }
     .status-disabled{ color:var(--bad); font-weight:500; }
-    .payment-warning-badge{ display:inline-flex; gap:4px; padding:2px 6px; border-radius:10px; background:rgba(245,158,11,.2); border:1px solid #f59e0b; font-size:10px; color:var(--warning); font-weight:700; margin-left:6px; }
+    .status-pending{ color:var(--warning); font-weight:500; }
+    .status-used{ color:var(--muted); font-weight:500; }
+    .status-expired{ color:var(--bad); font-weight:500; }
 
     .actions { display:flex; gap:6px; flex-wrap:wrap; }
     .actions button { padding:6px 10px; font-size:12px; min-height:32px; white-space:nowrap; }
+
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:20px; }
+    .stat-card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; text-align:center; }
+    .stat-number { font-size:2rem; font-weight:700; color:var(--ok); }
+    .stat-label { color:var(--muted); margin-top:4px; }
+
+    .invitation-form { background:rgba(59,130,246,.1); border:1px solid #3b82f6; border-radius:8px; padding:16px; margin-bottom:20px; }
+    .form-row { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+    .form-group { display:flex; flex-direction:column; gap:4px; min-width:150px; }
+    .form-group label { font-weight:500; color:var(--text); }
+
+    .code-display { font-family:monospace; background:#0e1830; padding:8px 12px; border-radius:4px; border:1px solid var(--brand2); font-weight:700; letter-spacing:2px; cursor:pointer; }
+    .code-display:hover { background:#1a2a4a; }
 
     #alertContainer { position:fixed; top:calc(var(--header-height) + 10px); right:16px; z-index:1000; max-width:calc(100vw - 32px); }
     .alert { padding:12px 16px; border-radius:8px; margin:8px 0; transition:opacity .3s; box-shadow:0 4px 12px rgba(0,0,0,.3); backdrop-filter:blur(8px); }
@@ -93,12 +119,16 @@
       .search-bar{ width:100%; min-width:auto; font-size:16px; }
       select{ width:100%; font-size:16px; }
       button{ width:100%; padding:14px 16px; font-size:16px; }
-      #usersTableContainer,#logsTableContainer{ margin:12px -12px; border-left:none; border-right:none; border-radius:0; }
+      .nav-tabs{ flex-wrap:wrap; }
+      .nav-tab{ flex:1; text-align:center; }
+      #usersTableContainer,#logsTableContainer,#invitationsTableContainer,#societesTableContainer{ margin:12px -12px; border-left:none; border-right:none; border-radius:0; }
       table{ min-width:800px; }
       th,td{ padding:8px 6px; font-size:12px; }
       .actions{ flex-direction:column; gap:4px; min-width:120px; }
       .actions button{ width:100%; padding:6px 8px; font-size:10px; min-height:28px; }
-      .payment-warning-badge{ display:block; margin:2px 0; text-align:center; }
+      .stats-grid{ grid-template-columns:repeat(2,1fr); }
+      .form-row{ flex-direction:column; }
+      .form-group{ min-width:100%; }
       #alertContainer{ position:fixed; top:10px; left:8px; right:8px; max-width:none; }
       .alert{ padding:10px 12px; font-size:14px; }
     }
@@ -110,6 +140,7 @@
       table{ min-width:700px; }
       th,td{ padding:6px 4px; font-size:11px; }
       .actions button{ font-size:9px; padding:4px 6px; }
+      .stats-grid{ grid-template-columns:1fr; }
     }
     @media (min-width:1200px){
       .card{ margin:24px auto; max-width:1400px; padding:24px; }
@@ -121,8 +152,6 @@
 
     @media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
     button:focus-visible,input:focus-visible,select:focus-visible{ outline:2px solid var(--ok); outline-offset:2px; }
-    #usersTableContainer:focus,#logsTableContainer:focus{ outline:2px solid var(--ok); outline-offset:2px; }
-    @media (prefers-contrast: high){ :root{ --text:#fff; --muted:#ccc; --bg:#000; --panel:#1a1a1a; } }
     .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
     ::-webkit-scrollbar{ width:8px; height:8px; }
     ::-webkit-scrollbar-track{ background:var(--bg); }
@@ -132,7 +161,7 @@
 </head>
 <body>
   <header>
-    <h1>🔐 Administration Anapharmo</h1>
+    <h1>🏢 Administration SaaS Anapharmo</h1>
     <div id="auth">
       <form id="loginForm" class="login-form" role="form" aria-label="Formulaire de connexion administrateur">
         <input id="email" type="email" placeholder="admin@email.com" autocomplete="email" aria-label="Adresse email administrateur" required />
@@ -150,87 +179,205 @@
   <div id="alertContainer" aria-live="polite" aria-label="Zone de notifications"></div>
 
   <div class="card">
-    <h2>👥 Gestion des utilisateurs</h2>
-
     <div id="adminInterface" class="hidden">
-      <div class="toolbar" role="toolbar" aria-label="Outils de filtrage des utilisateurs">
-        <input id="searchUsers" class="search-bar" placeholder="🔍 Rechercher..." autocomplete="off" aria-label="Rechercher des utilisateurs par nom ou email" type="search" />
-        <select id="roleFilter" aria-label="Filtrer par rôle">
-          <option value="">Tous les rôles</option>
-          <option value="docteur">Pharmacien</option>
-          <option value="vendeuse">Vendeuse</option>
-        </select>
-        <select id="companyFilter" aria-label="Filtrer par société">
-          <option value="">Toutes les sociétés</option>
-        </select>
-        <select id="statusFilter" aria-label="Filtrer par statut">
-          <option value="">Tous les statuts</option>
-          <option value="active">Actifs</option>
-          <option value="disabled">Désactivés</option>
-          <option value="warned">Avertis paiement</option>
-        </select>
-        <button id="refreshUsers" aria-label="Actualiser la liste des utilisateurs">🔄 Actualiser</button>
+      <!-- Statistiques générales -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="statsUsers">0</div>
+          <div class="stat-label">👥 Utilisateurs totaux</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statsSocietes">0</div>
+          <div class="stat-label">🏢 Sociétés actives</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statsInvitations">0</div>
+          <div class="stat-label">🎯 Invitations en cours</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statsActiveUsers">0</div>
+          <div class="stat-label">✅ Utilisateurs actifs</div>
+        </div>
       </div>
 
-      <div id="usersTableContainer" role="region" aria-label="Tableau des utilisateurs" tabindex="0">
-        <table role="table" aria-label="Liste des utilisateurs avec leurs informations et actions">
-          <thead>
-            <tr role="row">
-              <th scope="col">👤 Utilisateur</th>
-              <th scope="col">📧 Email</th>
-              <th scope="col">🏷️ Rôle</th>
-              <th scope="col">🏢 Société</th>
-              <th scope="col">💰 Paiement</th>
-              <th scope="col">📊 Statut</th>
-              <th scope="col">📅 Créé le</th>
-              <th scope="col">🔧 Actions</th>
-            </tr>
-          </thead>
-          <tbody id="usersTable"></tbody>
-        </table>
+      <!-- Navigation par onglets -->
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('users', this)">👥 Utilisateurs</button>
+        <button class="nav-tab" onclick="switchTab('societes', this)">🏢 Sociétés</button>
+        <button class="nav-tab" onclick="switchTab('invitations', this)">🎯 Invitations</button>
+        <button class="nav-tab" onclick="switchTab('logs', this)">📝 Activités</button>
+      </div>
+
+      <!-- ONGLET UTILISATEURS -->
+      <div id="tab-users" class="tab-content active">
+        <h2>👥 Gestion des utilisateurs</h2>
+        <div class="toolbar" role="toolbar" aria-label="Outils de filtrage des utilisateurs">
+          <input id="searchUsers" class="search-bar" placeholder="🔍 Rechercher..." autocomplete="off" aria-label="Rechercher des utilisateurs par nom ou email" type="search" />
+          <select id="roleFilter" aria-label="Filtrer par rôle">
+            <option value="">Tous les rôles</option>
+            <option value="docteur">Pharmacien</option>
+            <option value="vendeuse">Vendeuse</option>
+          </select>
+          <select id="companyFilter" aria-label="Filtrer par société">
+            <option value="">Toutes les sociétés</option>
+          </select>
+          <select id="statusFilter" aria-label="Filtrer par statut">
+            <option value="">Tous les statuts</option>
+            <option value="active">Actifs</option>
+            <option value="disabled">Désactivés</option>
+          </select>
+          <button id="refreshUsers" aria-label="Actualiser la liste des utilisateurs">🔄 Actualiser</button>
+        </div>
+
+        <div id="usersTableContainer" role="region" aria-label="Tableau des utilisateurs" tabindex="0">
+          <table role="table" aria-label="Liste des utilisateurs avec leurs informations et actions">
+            <thead>
+              <tr role="row">
+                <th scope="col">👤 Utilisateur</th>
+                <th scope="col">📧 Email</th>
+                <th scope="col">🏷️ Rôle</th>
+                <th scope="col">🏢 Société</th>
+                <th scope="col">📊 Statut</th>
+                <th scope="col">👑 Propriétaire</th>
+                <th scope="col">📅 Créé le</th>
+                <th scope="col">🔧 Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ONGLET SOCIÉTÉS -->
+      <div id="tab-societes" class="tab-content">
+        <h2>🏢 Gestion des sociétés</h2>
+        <div class="toolbar">
+          <input id="searchSocietes" class="search-bar" placeholder="🔍 Rechercher sociétés..." type="search" />
+          <button id="refreshSocietes">🔄 Actualiser</button>
+        </div>
+
+        <div id="societesTableContainer" role="region" aria-label="Tableau des sociétés" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th>🏢 Nom</th>
+                <th>📍 Adresse</th>
+                <th>📞 Téléphone</th>
+                <th>👑 Propriétaire</th>
+                <th>👥 Utilisateurs</th>
+                <th>📅 Créée le</th>
+                <th>🔧 Actions</th>
+              </tr>
+            </thead>
+            <tbody id="societesTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ONGLET INVITATIONS -->
+      <div id="tab-invitations" class="tab-content">
+        <h2>🎯 Gestion des invitations</h2>
+        
+        <!-- Formulaire création d'invitation -->
+        <div class="invitation-form">
+          <h3>➕ Créer une invitation d'urgence</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email de la personne</label>
+              <input id="inviteEmail" type="email" placeholder="user@example.com" />
+            </div>
+            <div class="form-group">
+              <label>Rôle</label>
+              <select id="inviteRole">
+                <option value="vendeuse">Vendeuse</option>
+                <option value="docteur">Docteur</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Société</label>
+              <select id="inviteSociete">
+                <option value="">Sélectionner...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Note (optionnel)</label>
+              <input id="inviteNote" placeholder="Invitation d'urgence" />
+            </div>
+            <button id="createInvitation" class="success">🎯 Créer invitation</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input id="searchInvitations" class="search-bar" placeholder="🔍 Rechercher invitations..." type="search" />
+          <select id="invitationStatusFilter">
+            <option value="">Tous les statuts</option>
+            <option value="pending">En attente</option>
+            <option value="used">Utilisée</option>
+            <option value="expired">Expirée</option>
+            <option value="cancelled">Annulée</option>
+          </select>
+          <button id="refreshInvitations">🔄 Actualiser</button>
+        </div>
+
+        <div id="invitationsTableContainer" role="region" aria-label="Tableau des invitations" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th>🎯 Code</th>
+                <th>📧 Email invité</th>
+                <th>🏷️ Rôle</th>
+                <th>🏢 Société</th>
+                <th>📊 Statut</th>
+                <th>👨‍💼 Créé par</th>
+                <th>📅 Créée le</th>
+                <th>⏰ Expire le</th>
+                <th>🔧 Actions</th>
+              </tr>
+            </thead>
+            <tbody id="invitationsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ONGLET ACTIVITÉS -->
+      <div id="tab-logs" class="tab-content">
+        <h2>📝 Activités récentes</h2>
+        <div class="toolbar" role="toolbar" aria-label="Filtres des activités">
+          <input id="logsSearch" class="search-bar" placeholder="🔍 Rechercher (email, détails…)" autocomplete="off" aria-label="Rechercher dans les activités" type="search" />
+          <select id="logsActionFilter" aria-label="Filtrer par type d'action">
+            <option value="">Toutes les actions</option>
+            <option value="USER_ACTIVATED">✅ Activation utilisateur</option>
+            <option value="USER_DEACTIVATED">🚫 Désactivation utilisateur</option>
+            <option value="INVITATION_CREATED">🎯 Invitation créée</option>
+            <option value="INVITATION_USED">✅ Invitation utilisée</option>
+            <option value="INVITATION_CANCELLED">❌ Invitation annulée</option>
+            <option value="SOCIETE_CREATED">🏢 Société créée</option>
+            <option value="USER_ROLE_CHANGED">🔄 Rôle modifié</option>
+          </select>
+          <button id="refreshLogs" aria-label="Actualiser les activités">🔄 Actualiser</button>
+        </div>
+
+        <div id="logsTableContainer" role="region" aria-label="Journal d'activités" tabindex="0">
+          <table role="table" aria-label="Liste des activités récentes">
+            <thead>
+              <tr>
+                <th scope="col">⏱️ Quand</th>
+                <th scope="col">🧩 Action</th>
+                <th scope="col">👤 Admin</th>
+                <th scope="col">🎯 Cible</th>
+                <th scope="col">🏢 Société</th>
+                <th scope="col">📄 Détails</th>
+              </tr>
+            </thead>
+            <tbody id="logsTable"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <div id="loginPrompt" class="alert alert-info" role="status" aria-live="polite">
-      🔒 <strong>Connexion requise</strong> — Connectez-vous avec un compte administrateur.
+      🔒 <strong>Connexion requise</strong> — Connectez-vous avec un compte administrateur pour accéder au panneau SaaS.
     </div>
-  </div>
-
-  <!-- 📝 ACTIVITÉS RÉCENTES -->
-  <div class="card" id="recentActivitiesCard">
-    <h2>📝 Activités récentes</h2>
-    <div class="toolbar" role="toolbar" aria-label="Filtres des activités">
-      <input id="logsSearch" class="search-bar" placeholder="🔍 Rechercher (email, détails…)" autocomplete="off" aria-label="Rechercher dans les activités" type="search" />
-      <select id="logsActionFilter" aria-label="Filtrer par type d'action">
-        <option value="">Toutes les actions</option>
-        <option value="USER_LOCKED">🔒 Verrouillage</option>
-        <option value="USER_UNLOCKED">🔓 Déverrouillage</option>
-        <option value="VENDEUSE_LOCKED_WITH_PHARMACIEN">🔒 Vendeuse verrouillée (cascade)</option>
-        <option value="VENDEUSE_UNLOCKED_BY_PHARMACIEN">🔓 Vendeuse déverrouillée (cascade)</option>
-        <option value="PAYMENT_MARKED_PAID">✅ Paiement marqué payé</option>
-        <option value="PAYMENT_MARKED_UNPAID">❌ Paiement marqué non payé</option>
-        <option value="PAYMENT_WARNING_SENT">💰 Avertissement envoyé</option>
-        <option value="PAYMENT_WARNING_DISABLED">💰 Avertissement désactivé</option>
-      </select>
-      <button id="refreshLogs" aria-label="Actualiser les activités">🔄 Actualiser</button>
-    </div>
-
-    <div id="logsTableContainer" role="region" aria-label="Journal d'activités" tabindex="0">
-      <table role="table" aria-label="Liste des activités récentes">
-        <thead>
-          <tr>
-            <th scope="col">⏱️ Quand</th>
-            <th scope="col">🧩 Action</th>
-            <th scope="col">👤 Admin</th>
-            <th scope="col">🎯 Cible</th>
-            <th scope="col">🏢 Société</th>
-            <th scope="col">📄 Détails</th>
-          </tr>
-        </thead>
-        <tbody id="logsTable"></tbody>
-      </table>
-    </div>
-    <div id="logsEmpty" class="alert alert-info hidden">Aucune activité récente.</div>
   </div>
 
   <div id="login-status" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
@@ -240,9 +387,10 @@
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import {
       getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc,
-      serverTimestamp, addDoc, deleteField, writeBatch, limit
+      serverTimestamp, addDoc, deleteField, writeBatch, limit, where, Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+    // Configuration Firebase - MÊME QUE VOTRE PROJET
     const firebaseConfig = {
       apiKey: "AIzaSyBHQSPXwED7W-FQMMs1D-OZcjW-5AP8A-w",
       authDomain: "anapharmo.firebaseapp.com",
@@ -256,8 +404,10 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // Email administrateur - CHANGEZ SELON VOTRE BESOIN
     const ADMIN_EMAIL = "echchaaba0178@gmail.com";
 
+    // Éléments DOM
     const el = {
       loginForm: document.getElementById('loginForm'),
       loginBtn: document.getElementById('loginBtn'),
@@ -269,29 +419,58 @@
       logoutBtn: document.getElementById('logoutBtn'),
       adminInterface: document.getElementById('adminInterface'),
       loginPrompt: document.getElementById('loginPrompt'),
+      alertContainer: document.getElementById('alertContainer'),
+      
+      // Stats
+      statsUsers: document.getElementById('statsUsers'),
+      statsSocietes: document.getElementById('statsSocietes'),
+      statsInvitations: document.getElementById('statsInvitations'),
+      statsActiveUsers: document.getElementById('statsActiveUsers'),
+      
+      // Utilisateurs
       usersTable: document.getElementById('usersTable'),
       searchUsers: document.getElementById('searchUsers'),
       roleFilter: document.getElementById('roleFilter'),
       companyFilter: document.getElementById('companyFilter'),
       statusFilter: document.getElementById('statusFilter'),
-      alertContainer: document.getElementById('alertContainer'),
+      refreshUsers: document.getElementById('refreshUsers'),
+      
+      // Sociétés
+      societesTable: document.getElementById('societesTable'),
+      searchSocietes: document.getElementById('searchSocietes'),
+      refreshSocietes: document.getElementById('refreshSocietes'),
+      
+      // Invitations
+      invitationsTable: document.getElementById('invitationsTable'),
+      searchInvitations: document.getElementById('searchInvitations'),
+      invitationStatusFilter: document.getElementById('invitationStatusFilter'),
+      inviteEmail: document.getElementById('inviteEmail'),
+      inviteRole: document.getElementById('inviteRole'),
+      inviteSociete: document.getElementById('inviteSociete'),
+      inviteNote: document.getElementById('inviteNote'),
+      createInvitation: document.getElementById('createInvitation'),
+      refreshInvitations: document.getElementById('refreshInvitations'),
+      
       // Activités
       logsTable: document.getElementById('logsTable'),
-      logsEmpty: document.getElementById('logsEmpty'),
       logsSearch: document.getElementById('logsSearch'),
       logsActionFilter: document.getElementById('logsActionFilter'),
       refreshLogs: document.getElementById('refreshLogs'),
     };
 
+    // Variables globales
     let currentUser = null;
     let isAdmin = false;
     let allUsers = [];
-    let allSocietes = {};
+    let allSocietes = [];
+    let allInvitations = [];
     let allLogs = [];
     let unsubUsers = null;
     let unsubSocietes = null;
+    let unsubInvitations = null;
     let unsubLogs = null;
 
+    // Utilitaires
     const showAlert = (type, message, duration = 4000) => {
       const a = document.createElement('div');
       a.className = `alert alert-${type}`;
@@ -309,7 +488,7 @@
       const withoutNumbers = beforeAt.replace(/[0-9]/g, '');
       const cleaned = withoutNumbers.replace(/[._-]/g,' ').trim().split(' ').filter(Boolean)
         .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-      return cleaned || 'Pharmacien';
+      return cleaned || 'Utilisateur';
     };
 
     const formatDate = (ts) => {
@@ -338,47 +517,129 @@
       return map[role] || 'Pharmacien';
     };
 
-    const getCompanyName = (user) => {
-      const societeId = user?.societeId || user?.companyId || user?.company_id;
-      if (societeId && allSocietes[societeId]) {
-        const s = allSocietes[societeId];
-        return s.name || s.nom || s.companyName || s.societe || s.title || societeId;
-      }
-      const fields = ['companyName','company','societe','pharmacy','pharmacie','entreprise','organization','organisation','workplace','workPlace','work_place','employer','clinic','clinique','cabinet','officine','structure','etablissement','pharmacyName','clinicName','businessName','storeName'];
-      for (const f of fields){ if (typeof user?.[f] === 'string' && user[f].trim()) return user[f].trim(); }
-      if (user?.profile && typeof user.profile === 'object'){
-        for (const f of fields){ if (typeof user.profile[f] === 'string' && user.profile[f].trim()) return user.profile[f].trim(); }
-      }
-      if (user?.company && typeof user.company === 'object'){
-        if (user.company.name) return user.company.name;
-        if (user.company.companyName) return user.company.companyName;
-      }
-      if (user?.role === 'admin') return 'Administration';
-      if (societeId) return `Société ID: ${societeId}`;
-      return '';
+    const getSocieteName = (societeId) => {
+      const societe = allSocietes.find(s => s.id === societeId);
+      return societe?.name || societe?.nom || societeId || 'Société inconnue';
     };
 
-    const sameCompany = (uA, uB) => {
-      const idA = uA?.societeId || uA?.companyId || uA?.company_id || null;
-      const idB = uB?.societeId || uB?.companyId || uB?.company_id || null;
-      if (idA && idB) return idA === idB;
-      if (!idA && !idB) {
-        const nameA = getCompanyName(uA) || null;
-        const nameB = getCompanyName(uB) || null;
-        return !!(nameA && nameB && nameA === nameB);
+    const generateInvitationCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < 8; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
       }
-      return false;
+      return result;
     };
 
-    const getVendeusesOfPharmacien = (pharmacienUser) =>
-      allUsers.filter(v => v.role === 'vendeuse' && sameCompany(v, pharmacienUser));
+    const copyToClipboard = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        showAlert('success', 'Code copié dans le presse-papier !');
+      } catch (err) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showAlert('success', 'Code copié !');
+      }
+    };
 
-    const updateCompanyFilter = () => {
-      const companies = [...new Set(allUsers.map(u => getCompanyName(u)).filter(c => c && c.trim() !== ''))].sort();
+    // Gestion des onglets (on passe le bouton appelant)
+    window.switchTab = (tabName, btn) => {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+      const panel = document.getElementById(`tab-${tabName}`);
+      if (panel) panel.classList.add('active');
+      if (btn) btn.classList.add('active');
+    };
+
+    // Mise à jour des statistiques
+    const updateStats = () => {
+      const activeUsers = allUsers.filter(u => u.active !== false).length;
+      const pendingInvitations = allInvitations.filter(i => i.status === 'pending' && new Date(i.expiresAt?.toDate?.() || i.expiresAt) > new Date()).length;
+      el.statsUsers.textContent = allUsers.length;
+      el.statsSocietes.textContent = allSocietes.length;
+      el.statsInvitations.textContent = pendingInvitations;
+      el.statsActiveUsers.textContent = activeUsers;
+    };
+
+    // LISTENERS FIRESTORE
+    const listenUsers = () => {
+      if (unsubUsers) unsubUsers();
+      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      unsubUsers = onSnapshot(q, (snap) => {
+        allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        renderUsers();
+        updateStats();
+        updateFilters();
+      }, (err) => {
+        console.error('Erreur users:', err);
+        showAlert('error', 'Erreur de chargement des utilisateurs');
+      });
+    };
+
+    const listenSocietes = () => {
+      if (unsubSocietes) unsubSocietes();
+      const q = query(collection(db, 'societes'), orderBy('createdAt', 'desc'));
+      unsubSocietes = onSnapshot(q, (snap) => {
+        allSocietes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderSocietes();
+        updateStats();
+        updateSocieteOptions();
+      }, (err) => {
+        console.warn('Erreur societes:', err);
+      });
+    };
+
+    const listenInvitations = () => {
+      if (unsubInvitations) unsubInvitations();
+      const q = query(collection(db, 'invitations'), orderBy('createdAt', 'desc'));
+      unsubInvitations = onSnapshot(q, (snap) => {
+        allInvitations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderInvitations();
+        updateStats();
+      }, (err) => {
+        console.warn('Erreur invitations:', err);
+      });
+    };
+
+    const listenLogs = () => {
+      if (unsubLogs) unsubLogs();
+      const q = query(collection(db, 'admin_logs'), orderBy('timestamp', 'desc'), limit(100));
+      unsubLogs = onSnapshot(q, (snap) => {
+        allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderLogs();
+      }, (err) => {
+        console.warn('Erreur logs:', err);
+      });
+    };
+
+    // MISE À JOUR DES FILTRES
+    const updateFilters = () => {
+      const societes = [...new Set(allUsers.map(u => u.societeId).filter(Boolean))];
       el.companyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
-      for (const c of companies){ const opt = document.createElement('option'); opt.value = c; opt.textContent = c; el.companyFilter.appendChild(opt); }
+      societes.forEach(sid => {
+        const name = getSocieteName(sid);
+        const opt = document.createElement('option');
+        opt.value = sid;
+        opt.textContent = name;
+        el.companyFilter.appendChild(opt);
+      });
     };
 
+    const updateSocieteOptions = () => {
+      el.inviteSociete.innerHTML = '<option value="">Sélectionner...</option>';
+      allSocietes.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name || s.nom || s.id;
+        el.inviteSociete.appendChild(opt);
+      });
+    };
+
+    // RENDU DES TABLEAUX
     const renderUsers = () => {
       const term = (el.searchUsers.value || '').toLowerCase();
       const roleF = el.roleFilter.value;
@@ -386,26 +647,22 @@
       const statusF = el.statusFilter.value;
 
       const filtered = allUsers.filter(u => {
-        const companyName = (getCompanyName(u) || '').toLowerCase();
-        const userName = (u.displayName || extractUsernameFromEmail(u.email) || '').toLowerCase();
+        const userName = extractUsernameFromEmail(u.email).toLowerCase();
         const email = (u.email || '').toLowerCase();
-        const searchOK = !term || email.includes(term) || userName.includes(term) || companyName.includes(term);
+        const societeName = getSocieteName(u.societeId).toLowerCase();
+        const searchOK = !term || email.includes(term) || userName.includes(term) || societeName.includes(term);
 
         let roleMatch = true;
         if (roleF === 'docteur') roleMatch = ['docteur','user','admin','pharmacien'].includes(u.role);
         else if (roleF === 'vendeuse') roleMatch = u.role === 'vendeuse';
         else if (roleF) roleMatch = u.role === roleF;
 
-        const companyMatch = !companyF || (getCompanyName(u) === companyF);
-
-        const warned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
-        const isDisabled = (u.status === 'disabled') || (u.locked === true);
-        const isActive = (u.status === 'active') && !u.locked;
-
-        const statusMatch = !statusF ||
-          (statusF === 'active' && isActive) ||
-          (statusF === 'disabled' && isDisabled) ||
-          (statusF === 'warned' && warned);
+        const companyMatch = !companyF || (u.societeId === companyF);
+        
+        const isActive = u.active !== false;
+        const statusMatch = !statusF || 
+          (statusF === 'active' && isActive) || 
+          (statusF === 'disabled' && !isActive);
 
         return searchOK && roleMatch && companyMatch && statusMatch;
       });
@@ -415,84 +672,133 @@
         return;
       }
 
-      const groups = {};
-      for (const u of filtered){
-        const company = getCompanyName(u) || 'Sans société';
-        if (!groups[company]) groups[company] = [];
-        groups[company].push(u);
-      }
-
-      const sortedCompanies = Object.keys(groups).sort();
       let html = '';
-      for (const companyName of sortedCompanies){
-        const users = groups[companyName].slice().sort((a,b)=>{
-          const da = a.createdAt?.toDate ? a.createdAt.toDate() : (a.createdAt ? new Date(a.createdAt) : 0);
-          const db = b.createdAt?.toDate ? b.createdAt.toDate() : (b.createdAt ? new Date(b.createdAt) : 0);
-          return (db?.getTime?.()||0) - (da?.getTime?.()||0);
-        });
+      filtered.forEach(u => {
+        const isActive = u.active !== false;
+        const userName = extractUsernameFromEmail(u.email);
+        const societeName = getSocieteName(u.societeId);
+        const isOwner = u.isCompanyOwner ? '👑' : '';
 
-        if (sortedCompanies.length > 1){
-          html += `<tr style="background:rgba(26,42,74,.3);"><td colspan="8" style="padding:8px 12px; font-weight:600; color:var(--text);">🏢 ${companyName} (${users.length} membre${users.length>1?'s':''})</td></tr>`;
-        }
-
-        for (const u of users){
-          const isLocked = (u.locked === true) || (u.status === 'disabled');
-          const warned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
-          const warnedBadge = warned ? `<span class="payment-warning-badge">Averti</span>` : '';
-          const userName = u.displayName || extractUsernameFromEmail(u.email);
-          const isPaid = !!(u.isPaid || u.paid || u.paiement);
-          const displayCompany = companyName === 'Sans société' ? '—' : companyName;
-
-          html += `
-            <tr>
-              <td><div style="display:flex;align-items:center;gap:8px;"><strong title="Email: ${u.email||'-'}">${userName}</strong>${warnedBadge}</div></td>
-              <td title="${u.email||'-'}">${u.email||'-'}</td>
-              <td>${formatRole(u.role)}</td>
-              <td title="${displayCompany}">${displayCompany}</td>
-              <td style="text-align:center;">
-                <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
-                  <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="window.togglePayment('${u.uid}', this.checked)" style="transform:scale(1.3);cursor:pointer;" id="pay-${u.uid}" />
-                  <label for="pay-${u.uid}" style="font-size:12px;color:${isPaid ? 'var(--ok)' : 'var(--muted)'};cursor:pointer;user-select:none;">${isPaid ? '✅ Payé' : '❌ Non payé'}</label>
-                </div>
-              </td>
-              <td><span class="${(u.status === 'active' && !u.locked) ? 'status-active' : 'status-disabled'}">${(u.status === 'active' && !u.locked) ? '✅ Actif' : '🔒 Désactivé'}</span></td>
-              <td>${formatDate(u.createdAt)}</td>
-              <td class="actions">
-                <button class="${isLocked ? 'success' : 'danger'}" onclick="window.toggleLock('${u.uid}')" title="${isLocked ? 'Déverrouiller' : 'Verrouiller'}">${isLocked ? '🔓 Déverrouiller' : '🔒 Verrouiller'}</button>
-                <button class="${warned ? 'payment' : 'warning'}" onclick="window.togglePaymentWarning('${u.uid}')" title="${warned ? 'Désactiver avertissement' : 'Envoyer avertissement'}">${warned ? '💸 Averti ON' : '💰 Averti OFF'}</button>
-              </td>
-            </tr>`;
-        }
-      }
+        html += `
+          <tr>
+            <td><strong>${userName}</strong></td>
+            <td>${u.email || '-'}</td>
+            <td>${formatRole(u.role)}</td>
+            <td>${societeName}</td>
+            <td><span class="${isActive ? 'status-active' : 'status-disabled'}">${isActive ? '✅ Actif' : '🚫 Désactivé'}</span></td>
+            <td>${isOwner}</td>
+            <td>${formatDate(u.createdAt)}</td>
+            <td class="actions">
+              <button class="${isActive ? 'danger' : 'success'}" onclick="toggleUserStatus('${u.uid}')">${isActive ? '🚫 Désactiver' : '✅ Activer'}</button>
+            </td>
+          </tr>`;
+      });
       el.usersTable.innerHTML = html;
     };
 
-    /* ==== ACTIVITÉS RÉCENTES ==== */
-    const ACTION_LABEL = {
-      USER_LOCKED: '🔒 Verrouillage',
-      USER_UNLOCKED: '🔓 Déverrouillage',
-      VENDEUSE_LOCKED_WITH_PHARMACIEN: '🔒 Vendeuse verrouillée (cascade)',
-      VENDEUSE_UNLOCKED_BY_PHARMACIEN: '🔓 Vendeuse déverrouillée (cascade)',
-      PAYMENT_MARKED_PAID: '✅ Paiement marqué payé',
-      PAYMENT_MARKED_UNPAID: '❌ Paiement marqué non payé',
-      PAYMENT_WARNING_SENT: '💰 Avertissement envoyé',
-      PAYMENT_WARNING_DISABLED: '💰 Avertissement désactivé',
+    const renderSocietes = () => {
+      const term = (el.searchSocietes.value || '').toLowerCase();
+      
+      const filtered = allSocietes.filter(s => {
+        const name = (s.name || s.nom || '').toLowerCase();
+        const address = (s.address || s.adresse || '').toLowerCase();
+        const owner = (s.ownerEmail || '').toLowerCase();
+        return !term || name.includes(term) || address.includes(term) || owner.includes(term);
+      });
+
+      if (filtered.length === 0) {
+        el.societesTable.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucune société trouvée</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(s => {
+        const userCount = allUsers.filter(u => u.societeId === s.id).length;
+        html += `
+          <tr>
+            <td><strong>${s.name || s.nom || s.id}</strong></td>
+            <td>${s.address || s.adresse || '-'}</td>
+            <td>${s.phone || s.telephone || '-'}</td>
+            <td>${s.ownerEmail || '-'}</td>
+            <td>${userCount} utilisateur${userCount > 1 ? 's' : ''}</td>
+            <td>${formatDate(s.createdAt)}</td>
+            <td class="actions">
+              <button class="info" onclick="viewSocieteDetails('${s.id}')">👁️ Voir</button>
+            </td>
+          </tr>`;
+      });
+      el.societesTable.innerHTML = html;
     };
 
-    const listenLogs = () => {
-      if (unsubLogs) unsubLogs();
-      try {
-        const qLogs = query(collection(db, 'admin_logs'), orderBy('timestamp','desc'), limit(100));
-        unsubLogs = onSnapshot(qLogs, (snap) => {
-          allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          renderLogs();
-        }, (err) => {
-          console.error('Erreur admin_logs:', err);
-          showAlert('error', 'Erreur de chargement des activités');
-        });
-      } catch (e) {
-        console.error('listenLogs error:', e);
+    const renderInvitations = () => {
+      const term = (el.searchInvitations.value || '').toLowerCase();
+      const statusF = el.invitationStatusFilter.value;
+
+      const filtered = allInvitations.filter(i => {
+        const email = (i.emailInvite || '').toLowerCase();
+        const code = (i.code || '').toLowerCase();
+        const society = getSocieteName(i.societeId).toLowerCase();
+        const searchOK = !term || email.includes(term) || code.includes(term) || society.includes(term);
+
+        // Déterminer le statut réel
+        let realStatus = i.status || 'pending';
+        if (realStatus === 'pending' && i.expiresAt) {
+          const expiry = i.expiresAt?.toDate?.() || new Date(i.expiresAt);
+          if (expiry < new Date()) realStatus = 'expired';
+        }
+
+        const statusMatch = !statusF || realStatus === statusF;
+        return searchOK && statusMatch;
+      });
+
+      if (filtered.length === 0) {
+        el.invitationsTable.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucune invitation trouvée</td></tr>`;
+        return;
       }
+
+      let html = '';
+      filtered.forEach(i => {
+        const expiry = i.expiresAt?.toDate?.() || new Date(i.expiresAt);
+        const isExpired = expiry < new Date();
+        let status = i.status || 'pending';
+        if (status === 'pending' && isExpired) status = 'expired';
+
+        const statusClass = {
+          'pending': 'status-pending',
+          'used': 'status-used',
+          'expired': 'status-expired',
+          'cancelled': 'status-disabled'
+        }[status] || 'status-pending';
+
+        const statusText = {
+          'pending': '⏳ En attente',
+          'used': '✅ Utilisée',
+          'expired': '⏰ Expirée',
+          'cancelled': '❌ Annulée'
+        }[status] || status;
+
+        html += `
+          <tr>
+            <td>
+              <span class="code-display" onclick="copyToClipboard('${i.code}')" title="Cliquer pour copier">
+                ${i.code}
+              </span>
+            </td>
+            <td>${i.emailInvite || '-'}</td>
+            <td>${formatRole(i.roleInvite)}</td>
+            <td>${getSocieteName(i.societeId)}</td>
+            <td><span class="${statusClass}">${statusText}</span></td>
+            <td>${i.createdBy || '-'}</td>
+            <td>${formatDate(i.createdAt)}</td>
+            <td>${formatDate(i.expiresAt)}</td>
+            <td class="actions">
+              ${status === 'pending' ? `<button class="danger" onclick="cancelInvitation('${i.id}')">❌ Annuler</button>` : ''}
+              ${(status === 'expired' || status === 'cancelled') ? `<button class="warning" onclick="renewInvitation('${i.id}')">🔄 Renouveler</button>` : ''}
+              <button class="danger" onclick="deleteInvitation('${i.id}')">🗑️ Supprimer</button>
+            </td>
+          </tr>`;
+      });
+      el.invitationsTable.innerHTML = html;
     };
 
     const renderLogs = () => {
@@ -512,234 +818,202 @@
       });
 
       if (filtered.length === 0) {
-        el.logsTable.innerHTML = '';
-        el.logsEmpty.classList.remove('hidden');
+        el.logsTable.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucune activité trouvée</td></tr>`;
         return;
       }
-      el.logsEmpty.classList.add('hidden');
+
+      const ACTION_LABELS = {
+        'USER_ACTIVATED': '✅ Activation utilisateur',
+        'USER_DEACTIVATED': '🚫 Désactivation utilisateur',
+        'INVITATION_CREATED': '🎯 Invitation créée',
+        'INVITATION_USED': '✅ Invitation utilisée',
+        'INVITATION_CANCELLED': '❌ Invitation annulée',
+        'SOCIETE_CREATED': '🏢 Société créée',
+        'USER_ROLE_CHANGED': '🔄 Rôle modifié',
+      };
 
       let html = '';
-      for (const log of filtered) {
-        const admin = log.adminEmail || '—';
-        const target = log.targetEmail || log.targetUid || '—';
-        const actionLabel = ACTION_LABEL[log.action] || log.action || '—';
-        const when = formatRelative(log.timestamp) + ` (${formatDate(log.timestamp)})`;
-
-        // Tenter de retrouver la société de la cible si elle est encore dans allUsers
-        let company = '—';
-        if (log.targetUid) {
-          const u = allUsers.find(x => x.uid === log.targetUid);
-          if (u) company = getCompanyName(u) || '—';
-        }
+      filtered.forEach(log => {
+        const actionLabel = ACTION_LABELS[log.action] || log.action || '—';
+        const when = formatRelative(log.timestamp);
+        const targetUser = allUsers.find(u => u.uid === log.targetUid);
+        const society = targetUser ? getSocieteName(targetUser.societeId) : '—';
 
         html += `
           <tr>
-            <td title="${formatDate(log.timestamp)||'-'}">${when}</td>
+            <td title="${formatDate(log.timestamp)}">${when}</td>
             <td>${actionLabel}</td>
-            <td>${admin}</td>
-            <td>${target}</td>
-            <td>${company}</td>
+            <td>${log.adminEmail || '—'}</td>
+            <td>${log.targetEmail || log.targetUid || '—'}</td>
+            <td>${society}</td>
             <td>${log.details || '—'}</td>
           </tr>`;
-      }
+      });
       el.logsTable.innerHTML = html;
     };
 
-    /* ==== Firestore listeners (sociétés / users) ==== */
-    const listenSocietes = () => {
-      if (unsubSocietes) unsubSocietes();
-      try {
-        const societesQuery = query(collection(db, 'societes'));
-        unsubSocietes = onSnapshot(societesQuery, snap => {
-          allSocietes = {};
-          snap.forEach(d => allSocietes[d.id] = { id: d.id, ...d.data() });
-          updateCompanyFilter();
-          renderUsers();
-          renderLogs(); // mise à jour des colonnes société si possible
-        }, err => {
-          console.warn('⚠️ Collection "societes" indisponible:', err?.message);
-          updateCompanyFilter(); renderUsers(); renderLogs();
-        });
-      } catch (e) {
-        console.warn('⚠️ listenSocietes erreur:', e?.message);
-      }
-    };
+    // ACTIONS ADMINISTRATIVES
+    window.toggleUserStatus = async (uid) => {
+      const user = allUsers.find(u => u.uid === uid);
+      if (!user) return showAlert('error', 'Utilisateur introuvable');
 
-    const listenUsers = () => {
-      if (unsubUsers) unsubUsers();
+      const isActive = user.active !== false;
+      const action = isActive ? 'désactiver' : 'activer';
+      
+      if (!confirm(`Confirmer la ${action === 'désactiver' ? 'désactivation' : 'réactivation'} de ${user.email} ?`)) return;
 
-      let qRef;
-      try { qRef = query(collection(db, 'users'), orderBy('createdAt','desc')); }
-      catch { qRef = collection(db, 'users'); }
-
-      unsubUsers = onSnapshot(qRef, snap => {
-        allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-        const hasCompanyId = allUsers.some(u => u.societeId || u.companyId || u.company_id);
-        if (hasCompanyId) listenSocietes(); else { updateCompanyFilter(); renderUsers(); renderLogs(); }
-      }, err => {
-        console.error('Erreur Firebase users:', err);
-        showAlert('error', "Erreur de chargement des utilisateurs");
-      });
-    };
-
-    /* ==== Actions (paiement / verrouillage / avertissement) ==== */
-    window.togglePayment = async (uid, isPaid) => {
-      const u = allUsers.find(x => x.uid === uid);
-      if (!u) return showAlert('error', 'Utilisateur introuvable');
       try {
         await updateDoc(doc(db, 'users', uid), {
-          isPaid: !!isPaid,
-          paidAt: isPaid ? serverTimestamp() : deleteField(),
-          paidBy: isPaid ? currentUser?.email || 'admin' : deleteField()
+          active: !isActive,
+          modifiedAt: serverTimestamp(),
+          modifiedBy: currentUser?.email || 'admin'
         });
+
         await addDoc(collection(db, 'admin_logs'), {
-          action: isPaid ? 'PAYMENT_MARKED_PAID' : 'PAYMENT_MARKED_UNPAID',
-          adminUid: currentUser?.uid || null,
-          adminEmail: currentUser?.email || null,
+          action: isActive ? 'USER_DEACTIVATED' : 'USER_ACTIVATED',
+          adminUid: currentUser?.uid,
+          adminEmail: currentUser?.email,
           targetUid: uid,
-          targetEmail: u.email || null,
-          details: `Paiement marqué comme ${isPaid ? 'payé' : 'non payé'}`,
+          targetEmail: user.email,
+          details: `Utilisateur ${action}é par l'administrateur`,
           timestamp: serverTimestamp()
         });
-        showAlert('success', `Paiement de ${u.email || 'utilisateur'} marqué comme ${isPaid ? 'payé' : 'non payé'}`);
-        setTimeout(() => { renderUsers(); }, 300);
-      } catch (e) {
-        console.error('togglePayment:', e);
-        showAlert('error', `Erreur: ${e.message}`);
+
+        showAlert('success', `Utilisateur ${action}é avec succès`);
+      } catch (error) {
+        console.error('Erreur toggleUserStatus:', error);
+        showAlert('error', `Erreur: ${error.message}`);
       }
     };
 
-    window.toggleLock = async (uid) => {
-      const u = allUsers.find(x => x.uid === uid);
-      if (!u) return showAlert('error', 'Utilisateur introuvable');
+    window.viewSocieteDetails = (societeId) => {
+      const societe = allSocietes.find(s => s.id === societeId);
+      const users = allUsers.filter(u => u.societeId === societeId);
+      
+      let details = `🏢 ${societe?.name || societe?.nom || societeId}\n\n`;
+      details += `📍 Adresse: ${societe?.address || societe?.adresse || 'Non renseignée'}\n`;
+      details += `📞 Téléphone: ${societe?.phone || societe?.telephone || 'Non renseigné'}\n`;
+      details += `👑 Propriétaire: ${societe?.ownerEmail || 'Non renseigné'}\n`;
+      details += `📅 Créée le: ${formatDate(societe?.createdAt)}\n\n`;
+      details += `👥 Utilisateurs (${users.length}):\n`;
+      users.forEach(u => {
+        details += `  • ${u.email} (${formatRole(u.role)}) ${u.active !== false ? '✅' : '🚫'}\n`;
+      });
 
-      const isLocked = (u.locked === true) || (u.status === 'disabled');
-      const isPharmacien = ['docteur','pharmacien','user','admin'].includes(u.role);
+      alert(details);
+    };
+
+    window.createInvitation = async () => {
+      const email = el.inviteEmail.value;
+      const role = el.inviteRole.value;
+      const societeId = el.inviteSociete.value;
+      const note = el.inviteNote.value;
+
+      if (!email || !societeId) {
+        return showAlert('error', 'Email et société sont requis');
+      }
 
       try {
-        if (!isLocked) {
-          // ----- VERROUILLER -----
-          const title = prompt("Titre du popup (utilisateur)", "🔒 Compte verrouillé") || "🔒 Compte verrouillé";
-          const message = prompt("Message du popup", "Votre compte a été verrouillé par l'administrateur. Contactez le support.") || "Votre compte a été verrouillé par l'administrateur. Contactez le support.";
-          const details = prompt("Détails (facultatif)", "Raison: sécurité / usage.") || "Raison: sécurité / usage.";
-          const hours = parseInt(prompt("Durée du popup (heures)", "24"), 10) || 24;
-          const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+        const code = generateInvitationCode();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
 
-          if (!confirm(`Confirmer VERROUILLAGE de ${u.email || 'cet utilisateur'} ?`)) return;
+        await addDoc(collection(db, 'invitations'), {
+          code,
+          emailInvite: email,
+          roleInvite: role,
+          societeId,
+          noteInvite: note,
+          status: 'pending',
+          createdAt: serverTimestamp(),
+          createdBy: currentUser?.email || 'admin',
+          expiresAt: Timestamp.fromDate(expiresAt)
+        });
 
-          await updateDoc(doc(db, 'users', uid), {
-            status: 'disabled', locked: true,
-            lockedAt: serverTimestamp(), lockedBy: currentUser?.email || 'admin',
-            adminPopup: { status:'active', type:'lockNotice', title, message, details, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
-          });
-          await addDoc(collection(db, 'admin_logs'), {
-            action: 'USER_LOCKED', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
-            targetUid: uid, targetEmail: u.email || null,
-            details: `Compte verrouillé + popup admin (${hours}h).`, timestamp: serverTimestamp()
-          });
-          showAlert('success', `Utilisateur ${u.email || ''} verrouillé avec succès.`);
+        await addDoc(collection(db, 'admin_logs'), {
+          action: 'INVITATION_CREATED',
+          adminUid: currentUser?.uid,
+          adminEmail: currentUser?.email,
+          targetEmail: email,
+          details: `Invitation créée par admin - Code: ${code}`,
+          timestamp: serverTimestamp()
+        });
 
-          if (isPharmacien) {
-            const vendeuses = getVendeusesOfPharmacien(u);
-            if (vendeuses.length > 0) {
-              const batch = writeBatch(db);
-              for (const v of vendeuses) {
-                batch.update(doc(db,'users',v.uid), {
-                  status:'disabled', locked:true, lockedAt:serverTimestamp(), lockedBy: currentUser?.email || 'admin',
-                  adminPopup:{ status:'active', type:'lockNotice', title:'🔒 Compte verrouillé', message:'Votre compte a été verrouillé car le pharmacien de votre société est verrouillé.', details:`Pharmacien: ${u.email || 'inconnu'}.`, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
-                });
-              }
-              await batch.commit();
-              for (const v of vendeuses) {
-                await addDoc(collection(db,'admin_logs'), {
-                  action:'VENDEUSE_LOCKED_WITH_PHARMACIEN', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
-                  targetUid:v.uid, targetEmail:v.email || null,
-                  details:`Vendeuse verrouillée automatiquement car le pharmacien ${u.email || ''} a été verrouillé.`, timestamp: serverTimestamp()
-                });
-              }
-              showAlert('warning', `${vendeuses.length} vendeuse(s) de la société ont été verrouillées automatiquement.`);
-            }
-          }
-          setTimeout(() => { renderUsers(); }, 300);
-        } else {
-          // ----- DÉVERROUILLER -----
-          const hours = parseInt(prompt("Durée du popup d'info (heures)", "12"), 10) || 12;
-          const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-          if (!confirm(`Déverrouiller ${u.email || 'cet utilisateur'} ?`)) return;
-
-          await updateDoc(doc(db,'users',uid), {
-            status:'active', locked:false, lockedAt:deleteField(), lockedBy:deleteField(),
-            adminPopup:{ status:'active', type:'unlockNotice', title:'✅ Compte réactivé', message:'Votre accès a été rétabli.', details:`Réactivation par ${currentUser?.email || 'admin'}.`, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
-          });
-          await addDoc(collection(db,'admin_logs'), {
-            action:'USER_UNLOCKED', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
-            targetUid: uid, targetEmail: u.email || null,
-            details:`Compte déverrouillé + popup info (${hours}h).`, timestamp: serverTimestamp()
-          });
-          showAlert('success', `Utilisateur ${u.email || ''} déverrouillé avec succès.`);
-
-          if (isPharmacien) {
-            const vendeuses = getVendeusesOfPharmacien(u);
-            if (vendeuses.length > 0) {
-              const batch = writeBatch(db);
-              for (const v of vendeuses) {
-                batch.update(doc(db,'users',v.uid), {
-                  status:'active', locked:false, lockedAt:deleteField(), lockedBy:deleteField(),
-                  adminPopup:{ status:'active', type:'unlockNotice', title:'✅ Compte réactivé', message:'Votre accès a été rétabli par le pharmacien.', details:`Pharmacien: ${u.email || 'inconnu'}.`, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
-                });
-              }
-              await batch.commit();
-              for (const v of vendeuses) {
-                await addDoc(collection(db,'admin_logs'), {
-                  action:'VENDEUSE_UNLOCKED_BY_PHARMACIEN', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
-                  targetUid: v.uid, targetEmail: v.email || null,
-                  details:`Vendeuse déverrouillée automatiquement car le pharmacien ${u.email || ''} a été réactivé.`, timestamp: serverTimestamp()
-                });
-              }
-              showAlert('info', `${vendeuses.length} vendeuse(s) de la société ont été déverrouillées automatiquement.`);
-            }
-          }
-          setTimeout(() => { renderUsers(); }, 300);
-        }
-      } catch (e) {
-        console.error('toggleLock:', e);
-        showAlert('error', `Erreur: ${e.message}`);
+        showAlert('success', `Invitation créée ! Code: ${code}`);
+        el.inviteEmail.value = '';
+        el.inviteNote.value = '';
+      } catch (error) {
+        console.error('Erreur createInvitation:', error);
+        showAlert('error', `Erreur: ${error.message}`);
       }
     };
 
-    window.togglePaymentWarning = async (uid) => {
-      const u = allUsers.find(x => x.uid === uid);
-      if (!u) return showAlert('error', 'Utilisateur introuvable');
-      const isWarned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
+    window.cancelInvitation = async (invitationId) => {
+      if (!confirm('Annuler cette invitation ?')) return;
+
       try {
-        if (isWarned) {
-          if (!confirm(`Désactiver l'avertissement paiement pour ${u.email || 'cet utilisateur'} ?`)) return;
-          await updateDoc(doc(db,'users',uid), { paymentWarning: deleteField() });
-          await addDoc(collection(db,'admin_logs'), {
-            action:'PAYMENT_WARNING_DISABLED', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
-            targetUid: uid, targetEmail: u.email || null, details:'Avertissement de paiement désactivé.', timestamp: serverTimestamp()
-          });
-          showAlert('success', `Avertissement désactivé pour ${u.email || ''}.`);
-        } else {
-          const hours = parseInt(prompt("Durée (heures)", "24"), 10) || 24;
-          const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-          if (!confirm(`Envoyer AVERTISSEMENT de paiement à ${u.email || 'cet utilisateur'} (${hours}h) ?`)) return;
-          await updateDoc(doc(db,'users',uid), {
-            paymentWarning: { status:'active', issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin', reason:'payment' }
-          });
-          await addDoc(collection(db,'admin_logs'), {
-            action:'PAYMENT_WARNING_SENT', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
-            targetUid: uid, targetEmail: u.email || null, details:`Avertissement paiement envoyé (${hours}h).`, timestamp: serverTimestamp()
-          });
-          showAlert('success', `Avertissement envoyé à ${u.email || ''}.`);
-        }
-      } catch (e) {
-        console.error('togglePaymentWarning:', e);
-        showAlert('error', `Erreur: ${e.message}`);
+        await updateDoc(doc(db, 'invitations', invitationId), {
+          status: 'cancelled',
+          cancelledAt: serverTimestamp(),
+          cancelledBy: currentUser?.email || 'admin'
+        });
+
+        await addDoc(collection(db, 'admin_logs'), {
+          action: 'INVITATION_CANCELLED',
+          adminUid: currentUser?.uid,
+          adminEmail: currentUser?.email,
+          details: 'Invitation annulée par l\'administrateur',
+          timestamp: serverTimestamp()
+        });
+
+        showAlert('success', 'Invitation annulée');
+      } catch (error) {
+        console.error('Erreur cancelInvitation:', error);
+        showAlert('error', `Erreur: ${error.message}`);
       }
     };
 
-    /* ==== UI / Auth ==== */
+    window.renewInvitation = async (invitationId) => {
+      if (!confirm('Renouveler cette invitation avec un nouveau code ?')) return;
+
+      try {
+        const newCode = generateInvitationCode();
+        const newExpiresAt = new Date();
+        newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+
+        await updateDoc(doc(db, 'invitations', invitationId), {
+          code: newCode,
+          status: 'pending',
+          expiresAt: Timestamp.fromDate(newExpiresAt),
+          renewedAt: serverTimestamp(),
+          renewedBy: currentUser?.email || 'admin'
+        });
+
+        showAlert('success', `Invitation renouvelée ! Nouveau code: ${newCode}`);
+      } catch (error) {
+        console.error('Erreur renewInvitation:', error);
+        showAlert('error', `Erreur: ${error.message}`);
+      }
+    };
+
+    window.deleteInvitation = async (invitationId) => {
+      if (!confirm('Supprimer définitivement cette invitation ?')) return;
+
+      try {
+        await updateDoc(doc(db, 'invitations', invitationId), {
+          deleted: true,
+          deletedAt: serverTimestamp(),
+          deletedBy: currentUser?.email || 'admin'
+        });
+
+        showAlert('success', 'Invitation supprimée');
+      } catch (error) {
+        console.error('Erreur deleteInvitation:', error);
+        showAlert('error', `Erreur: ${error.message}`);
+      }
+    };
+
+    // AUTHENTIFICATION ET UI
     const updateUI = (user) => {
       if (user) {
         currentUser = user;
@@ -753,80 +1027,104 @@
           el.adminInterface.classList.remove('hidden');
           el.loginPrompt.classList.add('hidden');
           listenUsers();
+          listenSocietes();
+          listenInvitations();
           listenLogs();
         } else {
           el.adminInterface.classList.add('hidden');
           el.loginPrompt.classList.remove('hidden');
-          if (unsubUsers) unsubUsers();
-          if (unsubSocietes) unsubSocietes();
-          if (unsubLogs) unsubLogs();
-          el.usersTable.innerHTML = '';
-          el.logsTable.innerHTML = '';
+          showAlert('warning', 'Accès limité : vous n\'êtes pas administrateur');
         }
       } else {
-        currentUser = null; isAdmin = false;
+        currentUser = null;
+        isAdmin = false;
         el.loginForm.classList.remove('hidden');
         el.userInfo.classList.add('hidden');
         el.adminInterface.classList.add('hidden');
         el.loginPrompt.classList.remove('hidden');
+        
         if (unsubUsers) unsubUsers();
         if (unsubSocietes) unsubSocietes();
+        if (unsubInvitations) unsubInvitations();
         if (unsubLogs) unsubLogs();
-        allUsers = []; allSocietes = {}; allLogs = [];
-        el.usersTable.innerHTML = '';
-        el.logsTable.innerHTML = '';
       }
     };
 
+    // EVENT LISTENERS
     el.loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       el.loginBtn.disabled = true;
       el.loginBtn.textContent = 'Connexion...';
-      const statusEl = document.getElementById('login-status');
-      statusEl.textContent = 'Tentative de connexion en cours...';
+      
       try {
         await signInWithEmailAndPassword(auth, el.email.value, el.password.value);
         showAlert('success', 'Connexion réussie !');
-        statusEl.textContent = 'Connexion réussie';
       } catch (err) {
         console.error('Erreur connexion:', err);
         showAlert('error', `Erreur de connexion: ${err.message}`);
-        statusEl.textContent = `Erreur de connexion: ${err.message}`;
       } finally {
         el.loginBtn.disabled = false;
         el.loginBtn.textContent = 'Connexion';
-        setTimeout(() => { statusEl.textContent = ''; }, 3000);
       }
     });
 
     el.logoutBtn.addEventListener('click', async () => {
-      try { await signOut(auth); showAlert('info','Déconnexion réussie'); }
-      catch (err) { showAlert('error', `Erreur déconnexion: ${err.message}`); }
+      try {
+        await signOut(auth);
+        showAlert('info', 'Déconnexion réussie');
+      } catch (err) {
+        showAlert('error', `Erreur déconnexion: ${err.message}`);
+      }
     });
 
-    // Filtres utilisateurs
+    // Filtres et recherches
     el.searchUsers.addEventListener('input', renderUsers);
     el.roleFilter.addEventListener('change', renderUsers);
     el.companyFilter.addEventListener('change', renderUsers);
     el.statusFilter.addEventListener('change', renderUsers);
-
-    // Filtres activités
+    
+    el.searchSocietes.addEventListener('input', renderSocietes);
+    
+    el.searchInvitations.addEventListener('input', renderInvitations);
+    el.invitationStatusFilter.addEventListener('change', renderInvitations);
+    
     el.logsSearch.addEventListener('input', renderLogs);
     el.logsActionFilter.addEventListener('change', renderLogs);
-    el.refreshLogs.addEventListener('click', () => { listenLogs(); showAlert('info','Activités actualisées'); });
 
-    document.getElementById('refreshUsers').addEventListener('click', () => {
-      if (isAdmin) { listenUsers(); showAlert('info', 'Liste des utilisateurs actualisée'); }
+    // Boutons d'actualisation
+    el.refreshUsers.addEventListener('click', () => {
+      listenUsers();
+      showAlert('info', 'Utilisateurs actualisés');
+    });
+    
+    el.refreshSocietes.addEventListener('click', () => {
+      listenSocietes();
+      showAlert('info', 'Sociétés actualisées');
+    });
+    
+    el.refreshInvitations.addEventListener('click', () => {
+      listenInvitations();
+      showAlert('info', 'Invitations actualisées');
+    });
+    
+    el.refreshLogs.addEventListener('click', () => {
+      listenLogs();
+      showAlert('info', 'Activités actualisées');
     });
 
+    // Bouton création d'invitation
+    el.createInvitation.addEventListener('click', createInvitation);
+
+    // Écouter les changements d'authentification
     onAuthStateChanged(auth, updateUI);
 
+    // Gestion des erreurs globales
     window.addEventListener('error', (e) => {
-      console.error('Erreur globale:', e.error);
+      console.error('Erreur globale:', e.error || e.message || e);
       showAlert('error', 'Une erreur inattendue s\'est produite');
     });
 
-    console.log('🔐 Administration Anapharmo — activités récentes ajoutées (recherche + filtre), verrouillage pharmacien ⇄ vendeuses en cascade.');
+    console.log('🏢 Administration SaaS Anapharmo Multi-tenant initialisée');
   </script>
 </body>
 </html>
