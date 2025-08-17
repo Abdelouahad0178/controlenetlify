@@ -18,576 +18,116 @@
       --muted: #8892b0;
       --header-height: 70px;
     }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial,sans-serif; line-height:1.6; overflow-x:hidden; }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, sans-serif;
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    /* Header responsive */
     header {
-      padding: 12px 16px;
-      background: #15223a;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid var(--line);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(8px);
-      min-height: var(--header-height);
-      flex-wrap: wrap;
-      gap: 12px;
+      padding:12px 16px; background:#15223a; display:flex; justify-content:space-between; align-items:center;
+      border-bottom:2px solid var(--line); position:sticky; top:0; z-index:100; backdrop-filter:blur(8px);
+      min-height:var(--header-height); flex-wrap:wrap; gap:12px;
+    }
+    h1 { margin:0; font-size:clamp(18px,4vw,24px); font-weight:600; }
+    h2 { margin-top:0; color:var(--text); font-size:clamp(16px,3vw,18px); font-weight:600; }
+
+    #auth { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .login-form { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    #userInfo { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    #userAvatar { width:32px; height:32px; border-radius:50%; background:var(--brand); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; }
+
+    .card { background:var(--panel); border:1px solid #223355; border-radius:12px; padding:16px; margin:16px; box-shadow:0 4px 12px rgba(0,0,0,.3); transition:transform .2s, box-shadow .2s; }
+    .card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.4); }
+
+    input,button,select { border-radius:8px; border:1px solid var(--brand2); background:#0e1830; color:#fff; padding:12px 16px; font-size:14px; transition:all .2s; min-height:44px; }
+    input:focus,select:focus { outline:none; border-color:var(--ok); box-shadow:0 0 0 3px rgba(183,255,195,.1); }
+    button { background:var(--brand); cursor:pointer; font-weight:500; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--brand2); }
+    button:hover:not(:disabled){ filter:brightness(1.15); transform:translateY(-1px); }
+    button:active{ transform:translateY(0); }
+    button:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+    button.danger{ background:#dc2626; border-color:#dc2626; }
+    button.success{ background:#059669; border-color:#059669; }
+    button.warning{ background:#f59e0b; border-color:#f59e0b; }
+    button.payment{ background:#ff6600; border-color:#ff6600; }
+    .hidden{ display:none !important; }
+
+    .toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    .search-bar { flex:1; min-width:200px; }
+
+    #usersTableContainer, #logsTableContainer { overflow-x:auto; margin:16px 0; border-radius:8px; border:1px solid var(--line); }
+    table { width:100%; border-collapse:collapse; min-width:1000px; }
+    th,td { border-bottom:1px solid var(--line); padding:12px; text-align:left; font-size:14px; white-space:nowrap; }
+    th { background:rgba(26,42,74,.7); font-weight:600; position:sticky; top:0; z-index:10; }
+    tr:hover { background:rgba(32,48,84,.3); }
+
+    .status-active{ color:var(--ok); font-weight:500; }
+    .status-disabled{ color:var(--bad); font-weight:500; }
+    .payment-warning-badge{ display:inline-flex; gap:4px; padding:2px 6px; border-radius:10px; background:rgba(245,158,11,.2); border:1px solid #f59e0b; font-size:10px; color:var(--warning); font-weight:700; margin-left:6px; }
+
+    .actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .actions button { padding:6px 10px; font-size:12px; min-height:32px; white-space:nowrap; }
+
+    #alertContainer { position:fixed; top:calc(var(--header-height) + 10px); right:16px; z-index:1000; max-width:calc(100vw - 32px); }
+    .alert { padding:12px 16px; border-radius:8px; margin:8px 0; transition:opacity .3s; box-shadow:0 4px 12px rgba(0,0,0,.3); backdrop-filter:blur(8px); }
+    .alert-success{ background:rgba(5,150,105,.2); border:1px solid #059669; color:var(--ok); }
+    .alert-error{ background:rgba(220,38,38,.2); border:1px solid #dc2626; color:var(--bad); }
+    .alert-warning{ background:rgba(255,217,61,.2); border:1px solid #ffd93d; color:var(--warning); }
+    .alert-info{ background:rgba(59,130,246,.2); border:1px solid #3b82f6; color:#3b82f6; }
+
+    @media (max-width:1023px) and (min-width:768px){
+      .card{ margin:12px; padding:20px; }
+      .toolbar{ gap:10px; }
+      .search-bar{ min-width:150px; }
+      table{ min-width:900px; }
+      th,td{ padding:10px 8px; font-size:13px; }
+      .actions button{ padding:4px 8px; font-size:11px; }
+    }
+    @media (max-width:767px){
+      header{ padding:8px 12px; flex-direction:column; align-items:stretch; gap:12px; position:relative; --header-height:auto; }
+      h1{ text-align:center; font-size:18px; }
+      #auth{ justify-content:center; }
+      .login-form{ width:100%; justify-content:center; }
+      .login-form input{ flex:1; min-width:120px; font-size:16px; }
+      #userInfo{ justify-content:center; width:100%; }
+      #userEmail{ font-size:14px; text-overflow:ellipsis; overflow:hidden; max-width:150px; }
+      .card{ margin:8px; padding:12px; border-radius:10px; }
+      .toolbar{ flex-direction:column; align-items:stretch; gap:8px; }
+      .search-bar{ width:100%; min-width:auto; font-size:16px; }
+      select{ width:100%; font-size:16px; }
+      button{ width:100%; padding:14px 16px; font-size:16px; }
+      #usersTableContainer,#logsTableContainer{ margin:12px -12px; border-left:none; border-right:none; border-radius:0; }
+      table{ min-width:800px; }
+      th,td{ padding:8px 6px; font-size:12px; }
+      .actions{ flex-direction:column; gap:4px; min-width:120px; }
+      .actions button{ width:100%; padding:6px 8px; font-size:10px; min-height:28px; }
+      .payment-warning-badge{ display:block; margin:2px 0; text-align:center; }
+      #alertContainer{ position:fixed; top:10px; left:8px; right:8px; max-width:none; }
+      .alert{ padding:10px 12px; font-size:14px; }
+    }
+    @media (max-width:479px){
+      .card{ margin:4px; padding:8px; }
+      h2{ font-size:16px; }
+      .login-form{ flex-direction:column; gap:8px; }
+      .login-form input,.login-form button{ width:100%; }
+      table{ min-width:700px; }
+      th,td{ padding:6px 4px; font-size:11px; }
+      .actions button{ font-size:9px; padding:4px 6px; }
+    }
+    @media (min-width:1200px){
+      .card{ margin:24px auto; max-width:1400px; padding:24px; }
+      header{ padding:16px 24px; }
+      .toolbar{ gap:16px; }
+      th,td{ padding:14px 16px; font-size:15px; }
+      .actions button{ padding:8px 12px; font-size:13px; }
     }
 
-    h1 {
-      margin: 0;
-      font-size: clamp(18px, 4vw, 24px);
-      font-weight: 600;
-    }
-
-    h2 {
-      margin-top: 0;
-      color: var(--text);
-      font-size: clamp(16px, 3vw, 18px);
-      font-weight: 600;
-    }
-
-    /* Auth section responsive */
-    #auth {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .login-form {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    #userInfo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    #userAvatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--brand);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 12px;
-    }
-
-    /* Cards responsives */
-    .card {
-      background: var(--panel);
-      border: 1px solid #223355;
-      border-radius: 12px;
-      padding: 16px;
-      margin: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-    }
-
-    /* Inputs et boutons responsives */
-    input, button, select {
-      border-radius: 8px;
-      border: 1px solid var(--brand2);
-      background: #0e1830;
-      color: #fff;
-      padding: 12px 16px;
-      font-size: 14px;
-      transition: all 0.2s ease;
-      min-height: 44px; /* Taille tactile minimum */
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--ok);
-      box-shadow: 0 0 0 3px rgba(183, 255, 195, 0.1);
-    }
-
-    button {
-      background: var(--brand);
-      cursor: pointer;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      border: 1px solid var(--brand2);
-    }
-
-    button:hover:not(:disabled) {
-      filter: brightness(1.15);
-      transform: translateY(-1px);
-    }
-
-    button:active {
-      transform: translateY(0);
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    button.danger {
-      background: #dc2626;
-      border-color: #dc2626;
-    }
-
-    button.success {
-      background: #059669;
-      border-color: #059669;
-    }
-
-    button.warning {
-      background: #f59e0b;
-      border-color: #f59e0b;
-    }
-
-    button.payment {
-      background: #ff6600;
-      border-color: #ff6600;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    /* Toolbar responsive */
-    .toolbar {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .search-bar {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    /* Tableaux responsives */
-    #usersTableContainer {
-      overflow-x: auto;
-      margin: 16px 0;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 800px; /* Largeur minimum pour éviter l'écrasement */
-    }
-
-    th, td {
-      border-bottom: 1px solid var(--line);
-      padding: 12px;
-      text-align: left;
-      font-size: 14px;
-      white-space: nowrap;
-    }
-
-    th {
-      background: rgba(26, 42, 74, 0.7);
-      font-weight: 600;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    tr:hover {
-      background: rgba(32, 48, 84, 0.3);
-    }
-
-    .status-active {
-      color: var(--ok);
-      font-weight: 500;
-    }
-
-    .status-disabled {
-      color: var(--bad);
-      font-weight: 500;
-    }
-
-    .payment-warning-badge {
-      display: inline-flex;
-      gap: 4px;
-      padding: 2px 6px;
-      border-radius: 10px;
-      background: rgba(245, 158, 11, 0.2);
-      border: 1px solid #f59e0b;
-      font-size: 10px;
-      color: var(--warning);
-      font-weight: 700;
-      margin-left: 6px;
-    }
-
-    /* Actions dans le tableau */
-    .actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .actions button {
-      padding: 6px 10px;
-      font-size: 12px;
-      min-height: 32px;
-      white-space: nowrap;
-    }
-
-    /* Alertes responsives */
-    #alertContainer {
-      position: fixed;
-      top: calc(var(--header-height) + 10px);
-      right: 16px;
-      z-index: 1000;
-      max-width: calc(100vw - 32px);
-    }
-
-    .alert {
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin: 8px 0;
-      transition: opacity 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(8px);
-    }
-
-    .alert-success {
-      background: rgba(5, 150, 105, 0.2);
-      border: 1px solid #059669;
-      color: var(--ok);
-    }
-
-    .alert-error {
-      background: rgba(220, 38, 38, 0.2);
-      border: 1px solid #dc2626;
-      color: var(--bad);
-    }
-
-    .alert-warning {
-      background: rgba(255, 217, 61, 0.2);
-      border: 1px solid #ffd93d;
-      color: var(--warning);
-    }
-
-    .alert-info {
-      background: rgba(59, 130, 246, 0.2);
-      border: 1px solid #3b82f6;
-      color: #3b82f6;
-    }
-
-    /* RESPONSIVE BREAKPOINTS */
-
-    /* TABLETTES (768px - 1023px) */
-    @media (max-width: 1023px) and (min-width: 768px) {
-      .card {
-        margin: 12px;
-        padding: 20px;
-      }
-
-      .toolbar {
-        gap: 10px;
-      }
-
-      .search-bar {
-        min-width: 150px;
-      }
-
-      table {
-        min-width: 700px;
-      }
-
-      th, td {
-        padding: 10px 8px;
-        font-size: 13px;
-      }
-
-      .actions button {
-        padding: 4px 8px;
-        font-size: 11px;
-      }
-    }
-
-    /* MOBILES (moins de 768px) */
-    @media (max-width: 767px) {
-      header {
-        padding: 8px 12px;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-        position: relative; /* Évite les problèmes de sticky */
-        --header-height: auto;
-      }
-
-      h1 {
-        text-align: center;
-        font-size: 18px;
-      }
-
-      #auth {
-        justify-content: center;
-      }
-
-      .login-form {
-        width: 100%;
-        justify-content: center;
-      }
-
-      .login-form input {
-        flex: 1;
-        min-width: 120px;
-        font-size: 16px; /* Évite le zoom sur iOS */
-      }
-
-      #userInfo {
-        justify-content: center;
-        width: 100%;
-      }
-
-      #userEmail {
-        font-size: 14px;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        max-width: 150px;
-      }
-
-      .card {
-        margin: 8px;
-        padding: 12px;
-        border-radius: 10px;
-      }
-
-      .toolbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-      }
-
-      .search-bar {
-        width: 100%;
-        min-width: auto;
-        font-size: 16px;
-      }
-
-      select {
-        width: 100%;
-        font-size: 16px;
-      }
-
-      button {
-        width: 100%;
-        padding: 14px 16px;
-        font-size: 16px;
-      }
-
-      /* Tableau en scroll horizontal sur mobile */
-      #usersTableContainer {
-        margin: 12px -12px; /* Étend jusqu'aux bords de la card */
-        border-left: none;
-        border-right: none;
-        border-radius: 0;
-      }
-
-      table {
-        min-width: 600px;
-      }
-
-      th, td {
-        padding: 8px 6px;
-        font-size: 12px;
-      }
-
-      .actions {
-        flex-direction: column;
-        gap: 4px;
-        min-width: 120px;
-      }
-
-      .actions button {
-        width: 100%;
-        padding: 6px 8px;
-        font-size: 10px;
-        min-height: 28px;
-      }
-
-      .payment-warning-badge {
-        display: block;
-        margin: 2px 0;
-        text-align: center;
-      }
-
-      /* Alertes en pleine largeur sur mobile */
-      #alertContainer {
-        position: fixed;
-        top: 10px;
-        left: 8px;
-        right: 8px;
-        max-width: none;
-      }
-
-      .alert {
-        padding: 10px 12px;
-        font-size: 14px;
-      }
-    }
-
-    /* TRÈS PETITS ÉCRANS (moins de 480px) */
-    @media (max-width: 479px) {
-      .card {
-        margin: 4px;
-        padding: 8px;
-      }
-
-      h2 {
-        font-size: 16px;
-      }
-
-      .login-form {
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .login-form input, .login-form button {
-        width: 100%;
-      }
-
-      table {
-        min-width: 500px;
-      }
-
-      th, td {
-        padding: 6px 4px;
-        font-size: 11px;
-      }
-
-      .actions button {
-        font-size: 9px;
-        padding: 4px 6px;
-      }
-    }
-
-    /* GRANDS ÉCRANS (plus de 1200px) */
-    @media (min-width: 1200px) {
-      .card {
-        margin: 24px auto;
-        max-width: 1400px;
-        padding: 24px;
-      }
-
-      header {
-        padding: 16px 24px;
-      }
-
-      .toolbar {
-        gap: 16px;
-      }
-
-      th, td {
-        padding: 14px 16px;
-        font-size: 15px;
-      }
-
-      .actions button {
-        padding: 8px 12px;
-        font-size: 13px;
-      }
-    }
-
-    /* Améliorations pour l'accessibilité */
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-
-    /* Focus visible pour la navigation au clavier */
-    button:focus-visible,
-    input:focus-visible,
-    select:focus-visible {
-      outline: 2px solid var(--ok);
-      outline-offset: 2px;
-    }
-
-    /* Focus pour les éléments du tableau */
-    #usersTableContainer:focus {
-      outline: 2px solid var(--ok);
-      outline-offset: 2px;
-    }
-
-    /* Amélioration du contraste pour les utilisateurs à mobilité réduite */
-    @media (prefers-contrast: high) {
-      :root {
-        --text: #ffffff;
-        --muted: #cccccc;
-        --bg: #000000;
-        --panel: #1a1a1a;
-      }
-    }
-
-    /* Support pour les lecteurs d'écran */
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    /* Scroll bars personnalisées */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--bg);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--brand2);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--brand);
-    }
+    @media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+    button:focus-visible,input:focus-visible,select:focus-visible{ outline:2px solid var(--ok); outline-offset:2px; }
+    #usersTableContainer:focus,#logsTableContainer:focus{ outline:2px solid var(--ok); outline-offset:2px; }
+    @media (prefers-contrast: high){ :root{ --text:#fff; --muted:#ccc; --bg:#000; --panel:#1a1a1a; } }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    ::-webkit-scrollbar{ width:8px; height:8px; }
+    ::-webkit-scrollbar-track{ background:var(--bg); }
+    ::-webkit-scrollbar-thumb{ background:var(--brand2); border-radius:4px; }
+    ::-webkit-scrollbar-thumb:hover{ background:var(--brand); }
   </style>
 </head>
 <body>
@@ -595,22 +135,8 @@
     <h1>🔐 Administration Anapharmo</h1>
     <div id="auth">
       <form id="loginForm" class="login-form" role="form" aria-label="Formulaire de connexion administrateur">
-        <input 
-          id="email" 
-          type="email" 
-          placeholder="admin@email.com" 
-          autocomplete="email" 
-          aria-label="Adresse email administrateur"
-          required 
-        />
-        <input 
-          id="password" 
-          type="password" 
-          placeholder="••••••••" 
-          autocomplete="current-password"
-          aria-label="Mot de passe administrateur"
-          required 
-        />
+        <input id="email" type="email" placeholder="admin@email.com" autocomplete="email" aria-label="Adresse email administrateur" required />
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" aria-label="Mot de passe administrateur" required />
         <button type="submit" id="loginBtn" aria-describedby="login-status">Connexion</button>
       </form>
       <div id="userInfo" class="hidden">
@@ -628,20 +154,14 @@
 
     <div id="adminInterface" class="hidden">
       <div class="toolbar" role="toolbar" aria-label="Outils de filtrage des utilisateurs">
-        <input 
-          id="searchUsers" 
-          class="search-bar" 
-          placeholder="🔍 Rechercher..." 
-          autocomplete="off"
-          aria-label="Rechercher des utilisateurs par nom ou email"
-          type="search"
-        />
+        <input id="searchUsers" class="search-bar" placeholder="🔍 Rechercher..." autocomplete="off" aria-label="Rechercher des utilisateurs par nom ou email" type="search" />
         <select id="roleFilter" aria-label="Filtrer par rôle">
           <option value="">Tous les rôles</option>
-          <option value="admin">Admin</option>
+          <option value="docteur">Pharmacien</option>
           <option value="vendeuse">Vendeuse</option>
-          <option value="moderator">Modérateur</option>
-          <option value="user">Utilisateur</option>
+        </select>
+        <select id="companyFilter" aria-label="Filtrer par société">
+          <option value="">Toutes les sociétés</option>
         </select>
         <select id="statusFilter" aria-label="Filtrer par statut">
           <option value="">Tous les statuts</option>
@@ -656,12 +176,14 @@
         <table role="table" aria-label="Liste des utilisateurs avec leurs informations et actions">
           <thead>
             <tr role="row">
-              <th role="columnheader" scope="col">👤 Utilisateur</th>
-              <th role="columnheader" scope="col">📧 Email</th>
-              <th role="columnheader" scope="col">🏷️ Rôle</th>
-              <th role="columnheader" scope="col">📊 Statut</th>
-              <th role="columnheader" scope="col">📅 Créé le</th>
-              <th role="columnheader" scope="col">🔧 Actions</th>
+              <th scope="col">👤 Utilisateur</th>
+              <th scope="col">📧 Email</th>
+              <th scope="col">🏷️ Rôle</th>
+              <th scope="col">🏢 Société</th>
+              <th scope="col">💰 Paiement</th>
+              <th scope="col">📊 Statut</th>
+              <th scope="col">📅 Créé le</th>
+              <th scope="col">🔧 Actions</th>
             </tr>
           </thead>
           <tbody id="usersTable"></tbody>
@@ -674,13 +196,52 @@
     </div>
   </div>
 
-  <!-- Status pour les lecteurs d'écran -->
+  <!-- 📝 ACTIVITÉS RÉCENTES -->
+  <div class="card" id="recentActivitiesCard">
+    <h2>📝 Activités récentes</h2>
+    <div class="toolbar" role="toolbar" aria-label="Filtres des activités">
+      <input id="logsSearch" class="search-bar" placeholder="🔍 Rechercher (email, détails…)" autocomplete="off" aria-label="Rechercher dans les activités" type="search" />
+      <select id="logsActionFilter" aria-label="Filtrer par type d'action">
+        <option value="">Toutes les actions</option>
+        <option value="USER_LOCKED">🔒 Verrouillage</option>
+        <option value="USER_UNLOCKED">🔓 Déverrouillage</option>
+        <option value="VENDEUSE_LOCKED_WITH_PHARMACIEN">🔒 Vendeuse verrouillée (cascade)</option>
+        <option value="VENDEUSE_UNLOCKED_BY_PHARMACIEN">🔓 Vendeuse déverrouillée (cascade)</option>
+        <option value="PAYMENT_MARKED_PAID">✅ Paiement marqué payé</option>
+        <option value="PAYMENT_MARKED_UNPAID">❌ Paiement marqué non payé</option>
+        <option value="PAYMENT_WARNING_SENT">💰 Avertissement envoyé</option>
+        <option value="PAYMENT_WARNING_DISABLED">💰 Avertissement désactivé</option>
+      </select>
+      <button id="refreshLogs" aria-label="Actualiser les activités">🔄 Actualiser</button>
+    </div>
+
+    <div id="logsTableContainer" role="region" aria-label="Journal d'activités" tabindex="0">
+      <table role="table" aria-label="Liste des activités récentes">
+        <thead>
+          <tr>
+            <th scope="col">⏱️ Quand</th>
+            <th scope="col">🧩 Action</th>
+            <th scope="col">👤 Admin</th>
+            <th scope="col">🎯 Cible</th>
+            <th scope="col">🏢 Société</th>
+            <th scope="col">📄 Détails</th>
+          </tr>
+        </thead>
+        <tbody id="logsTable"></tbody>
+      </table>
+    </div>
+    <div id="logsEmpty" class="alert alert-info hidden">Aucune activité récente.</div>
+  </div>
+
   <div id="login-status" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, limit, serverTimestamp, addDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc,
+      serverTimestamp, addDoc, deleteField, writeBatch, limit
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBHQSPXwED7W-FQMMs1D-OZcjW-5AP8A-w",
@@ -711,14 +272,24 @@
       usersTable: document.getElementById('usersTable'),
       searchUsers: document.getElementById('searchUsers'),
       roleFilter: document.getElementById('roleFilter'),
+      companyFilter: document.getElementById('companyFilter'),
       statusFilter: document.getElementById('statusFilter'),
-      alertContainer: document.getElementById('alertContainer')
+      alertContainer: document.getElementById('alertContainer'),
+      // Activités
+      logsTable: document.getElementById('logsTable'),
+      logsEmpty: document.getElementById('logsEmpty'),
+      logsSearch: document.getElementById('logsSearch'),
+      logsActionFilter: document.getElementById('logsActionFilter'),
+      refreshLogs: document.getElementById('refreshLogs'),
     };
 
     let currentUser = null;
     let isAdmin = false;
     let allUsers = [];
+    let allSocietes = {};
+    let allLogs = [];
     let unsubUsers = null;
+    let unsubSocietes = null;
     let unsubLogs = null;
 
     const showAlert = (type, message, duration = 4000) => {
@@ -729,308 +300,490 @@
       a.setAttribute('aria-atomic', 'true');
       a.innerHTML = `<strong>${type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}</strong> ${message}`;
       el.alertContainer.appendChild(a);
-      
-      // Auto-remove après la durée spécifiée
-      setTimeout(() => {
-        a.style.opacity = '0';
-        setTimeout(() => {
-          if (a.parentNode) a.remove();
-        }, 300);
-      }, duration - 300);
+      setTimeout(() => { a.style.opacity = '0'; setTimeout(() => { if (a.parentNode) a.remove(); }, 300); }, Math.max(600, duration - 300));
+    };
+
+    const extractUsernameFromEmail = (email) => {
+      if (!email || typeof email !== 'string') return 'Sans nom';
+      const beforeAt = email.split('@')[0];
+      const withoutNumbers = beforeAt.replace(/[0-9]/g, '');
+      const cleaned = withoutNumbers.replace(/[._-]/g,' ').trim().split(' ').filter(Boolean)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      return cleaned || 'Pharmacien';
     };
 
     const formatDate = (ts) => {
       if (!ts) return '-';
-      const d = ts.toDate ? ts.toDate() : new Date(ts);
-      return d.toLocaleString('fr-FR', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
+      const d = ts?.toDate ? ts.toDate() : new Date(ts);
+      if (isNaN(d.getTime())) return '-';
+      return d.toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    };
+
+    const formatRelative = (ts) => {
+      if (!ts) return '-';
+      const d = ts?.toDate ? ts.toDate() : new Date(ts);
+      const diff = Date.now() - d.getTime();
+      const s = Math.round(diff / 1000);
+      if (s < 60) return `il y a ${s}s`;
+      const m = Math.round(s/60);
+      if (m < 60) return `il y a ${m} min`;
+      const h = Math.round(m/60);
+      if (h < 24) return `il y a ${h} h`;
+      const j = Math.round(h/24);
+      return `il y a ${j} j`;
     };
 
     const formatRole = (role) => {
-      const map = { 
-        admin: 'Admin', 
-        vendeuse: 'Vendeuse', 
-        moderator: 'Modérateur', 
-        user: 'Utilisateur' 
-      };
-      return map[role] || 'Utilisateur';
+      const map = { docteur:'Pharmacien', user:'Pharmacien', admin:'Pharmacien', pharmacien:'Pharmacien', vendeuse:'Vendeuse' };
+      return map[role] || 'Pharmacien';
     };
 
-    const updateUI = (user) => {
-      if (user) {
-        currentUser = user;
-        isAdmin = user.email === ADMIN_EMAIL;
-        el.loginForm.classList.add('hidden');
-        el.userInfo.classList.remove('hidden');
-        el.userEmail.textContent = user.email;
-        el.userAvatar.textContent = user.email.substring(0, 2).toUpperCase();
-
-        if (isAdmin) {
-          el.adminInterface.classList.remove('hidden');
-          el.loginPrompt.classList.add('hidden');
-          listenUsers();
-        } else {
-          el.adminInterface.classList.add('hidden');
-          el.loginPrompt.classList.remove('hidden');
-          if (unsubUsers) unsubUsers();
-        }
-      } else {
-        currentUser = null; 
-        isAdmin = false;
-        el.loginForm.classList.remove('hidden');
-        el.userInfo.classList.add('hidden');
-        el.adminInterface.classList.add('hidden');
-        el.loginPrompt.classList.remove('hidden');
-        if (unsubUsers) unsubUsers();
-        allUsers = [];
-        el.usersTable.innerHTML = '';
+    const getCompanyName = (user) => {
+      const societeId = user?.societeId || user?.companyId || user?.company_id;
+      if (societeId && allSocietes[societeId]) {
+        const s = allSocietes[societeId];
+        return s.name || s.nom || s.companyName || s.societe || s.title || societeId;
       }
+      const fields = ['companyName','company','societe','pharmacy','pharmacie','entreprise','organization','organisation','workplace','workPlace','work_place','employer','clinic','clinique','cabinet','officine','structure','etablissement','pharmacyName','clinicName','businessName','storeName'];
+      for (const f of fields){ if (typeof user?.[f] === 'string' && user[f].trim()) return user[f].trim(); }
+      if (user?.profile && typeof user.profile === 'object'){
+        for (const f of fields){ if (typeof user.profile[f] === 'string' && user.profile[f].trim()) return user.profile[f].trim(); }
+      }
+      if (user?.company && typeof user.company === 'object'){
+        if (user.company.name) return user.company.name;
+        if (user.company.companyName) return user.company.companyName;
+      }
+      if (user?.role === 'admin') return 'Administration';
+      if (societeId) return `Société ID: ${societeId}`;
+      return '';
+    };
+
+    const sameCompany = (uA, uB) => {
+      const idA = uA?.societeId || uA?.companyId || uA?.company_id || null;
+      const idB = uB?.societeId || uB?.companyId || uB?.company_id || null;
+      if (idA && idB) return idA === idB;
+      if (!idA && !idB) {
+        const nameA = getCompanyName(uA) || null;
+        const nameB = getCompanyName(uB) || null;
+        return !!(nameA && nameB && nameA === nameB);
+      }
+      return false;
+    };
+
+    const getVendeusesOfPharmacien = (pharmacienUser) =>
+      allUsers.filter(v => v.role === 'vendeuse' && sameCompany(v, pharmacienUser));
+
+    const updateCompanyFilter = () => {
+      const companies = [...new Set(allUsers.map(u => getCompanyName(u)).filter(c => c && c.trim() !== ''))].sort();
+      el.companyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
+      for (const c of companies){ const opt = document.createElement('option'); opt.value = c; opt.textContent = c; el.companyFilter.appendChild(opt); }
     };
 
     const renderUsers = () => {
       const term = (el.searchUsers.value || '').toLowerCase();
       const roleF = el.roleFilter.value;
+      const companyF = el.companyFilter.value;
       const statusF = el.statusFilter.value;
 
       const filtered = allUsers.filter(u => {
-        const search = (u.email || '').toLowerCase().includes(term) || 
-                      (u.displayName || '').toLowerCase().includes(term);
-        const roleMatch = !roleF || u.role === roleF;
-        const statusMatch =
-          !statusF ||
-          (statusF === 'active' && u.status === 'active') ||
-          (statusF === 'disabled' && (u.status === 'disabled' || u.locked === true)) ||
-          (statusF === 'warned' && u.paymentWarning && u.paymentWarning.status === 'active');
-        return search && roleMatch && statusMatch;
+        const companyName = (getCompanyName(u) || '').toLowerCase();
+        const userName = (u.displayName || extractUsernameFromEmail(u.email) || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const searchOK = !term || email.includes(term) || userName.includes(term) || companyName.includes(term);
+
+        let roleMatch = true;
+        if (roleF === 'docteur') roleMatch = ['docteur','user','admin','pharmacien'].includes(u.role);
+        else if (roleF === 'vendeuse') roleMatch = u.role === 'vendeuse';
+        else if (roleF) roleMatch = u.role === roleF;
+
+        const companyMatch = !companyF || (getCompanyName(u) === companyF);
+
+        const warned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
+        const isDisabled = (u.status === 'disabled') || (u.locked === true);
+        const isActive = (u.status === 'active') && !u.locked;
+
+        const statusMatch = !statusF ||
+          (statusF === 'active' && isActive) ||
+          (statusF === 'disabled' && isDisabled) ||
+          (statusF === 'warned' && warned);
+
+        return searchOK && roleMatch && companyMatch && statusMatch;
       });
 
       if (filtered.length === 0) {
-        el.usersTable.innerHTML = `
-          <tr role="row">
-            <td colspan="6" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;" role="cell">
-              Aucun utilisateur trouvé
-            </td>
-          </tr>
-        `;
+        el.usersTable.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucun utilisateur trouvé</td></tr>`;
         return;
       }
 
-      el.usersTable.innerHTML = filtered.map((u, index) => {
-        const isLocked = (u.locked === true) || (u.status === 'disabled');
-        const isWarned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
-        const warnedBadge = isWarned ? `<span class="payment-warning-badge" aria-label="Utilisateur averti pour paiement">Averti</span>` : '';
-        
-        return `
-          <tr role="row" aria-rowindex="${index + 2}">
-            <td role="cell">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <strong>${u.displayName || 'Sans nom'}</strong>
-                ${warnedBadge}
-              </div>
-            </td>
-            <td role="cell" title="${u.email || '—'}">${u.email || '—'}</td>
-            <td role="cell">${formatRole(u.role)}</td>
-            <td role="cell">
-              <span class="${u.status === 'active' ? 'status-active' : 'status-disabled'}" 
-                    aria-label="Statut: ${u.status === 'active' ? 'Compte actif' : 'Compte désactivé'}">
-                ${u.status === 'active' ? '✅ Actif' : '🔒 Désactivé'}
-              </span>
-            </td>
-            <td role="cell">${formatDate(u.createdAt)}</td>
-            <td role="cell" class="actions">
-              <button class="${isLocked ? 'success' : 'danger'}" 
-                      onclick="window.toggleLock('${u.uid}')"
-                      aria-label="${isLocked ? 'Déverrouiller le compte de ' + (u.email || 'cet utilisateur') : 'Verrouiller le compte de ' + (u.email || 'cet utilisateur')}"
-                      title="${isLocked ? 'Déverrouiller ce compte' : 'Verrouiller ce compte'}">
-                ${isLocked ? '🔓 Déverrouiller' : '🔒 Verrouiller'}
-              </button>
-              <button class="${isWarned ? 'payment' : 'warning'}" 
-                      onclick="window.togglePaymentWarning('${u.uid}')"
-                      aria-label="${isWarned ? 'Désactiver l\'avertissement de paiement pour ' + (u.email || 'cet utilisateur') : 'Envoyer un avertissement de paiement à ' + (u.email || 'cet utilisateur')}"
-                      title="${isWarned ? 'Désactiver l\'avertissement' : 'Envoyer un avertissement'}">
-                ${isWarned ? '💸 Averti ON' : '💰 Averti OFF'}
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      const groups = {};
+      for (const u of filtered){
+        const company = getCompanyName(u) || 'Sans société';
+        if (!groups[company]) groups[company] = [];
+        groups[company].push(u);
+      }
+
+      const sortedCompanies = Object.keys(groups).sort();
+      let html = '';
+      for (const companyName of sortedCompanies){
+        const users = groups[companyName].slice().sort((a,b)=>{
+          const da = a.createdAt?.toDate ? a.createdAt.toDate() : (a.createdAt ? new Date(a.createdAt) : 0);
+          const db = b.createdAt?.toDate ? b.createdAt.toDate() : (b.createdAt ? new Date(b.createdAt) : 0);
+          return (db?.getTime?.()||0) - (da?.getTime?.()||0);
+        });
+
+        if (sortedCompanies.length > 1){
+          html += `<tr style="background:rgba(26,42,74,.3);"><td colspan="8" style="padding:8px 12px; font-weight:600; color:var(--text);">🏢 ${companyName} (${users.length} membre${users.length>1?'s':''})</td></tr>`;
+        }
+
+        for (const u of users){
+          const isLocked = (u.locked === true) || (u.status === 'disabled');
+          const warned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
+          const warnedBadge = warned ? `<span class="payment-warning-badge">Averti</span>` : '';
+          const userName = u.displayName || extractUsernameFromEmail(u.email);
+          const isPaid = !!(u.isPaid || u.paid || u.paiement);
+          const displayCompany = companyName === 'Sans société' ? '—' : companyName;
+
+          html += `
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:8px;"><strong title="Email: ${u.email||'-'}">${userName}</strong>${warnedBadge}</div></td>
+              <td title="${u.email||'-'}">${u.email||'-'}</td>
+              <td>${formatRole(u.role)}</td>
+              <td title="${displayCompany}">${displayCompany}</td>
+              <td style="text-align:center;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                  <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="window.togglePayment('${u.uid}', this.checked)" style="transform:scale(1.3);cursor:pointer;" id="pay-${u.uid}" />
+                  <label for="pay-${u.uid}" style="font-size:12px;color:${isPaid ? 'var(--ok)' : 'var(--muted)'};cursor:pointer;user-select:none;">${isPaid ? '✅ Payé' : '❌ Non payé'}</label>
+                </div>
+              </td>
+              <td><span class="${(u.status === 'active' && !u.locked) ? 'status-active' : 'status-disabled'}">${(u.status === 'active' && !u.locked) ? '✅ Actif' : '🔒 Désactivé'}</span></td>
+              <td>${formatDate(u.createdAt)}</td>
+              <td class="actions">
+                <button class="${isLocked ? 'success' : 'danger'}" onclick="window.toggleLock('${u.uid}')" title="${isLocked ? 'Déverrouiller' : 'Verrouiller'}">${isLocked ? '🔓 Déverrouiller' : '🔒 Verrouiller'}</button>
+                <button class="${warned ? 'payment' : 'warning'}" onclick="window.togglePaymentWarning('${u.uid}')" title="${warned ? 'Désactiver avertissement' : 'Envoyer avertissement'}">${warned ? '💸 Averti ON' : '💰 Averti OFF'}</button>
+              </td>
+            </tr>`;
+        }
+      }
+      el.usersTable.innerHTML = html;
+    };
+
+    /* ==== ACTIVITÉS RÉCENTES ==== */
+    const ACTION_LABEL = {
+      USER_LOCKED: '🔒 Verrouillage',
+      USER_UNLOCKED: '🔓 Déverrouillage',
+      VENDEUSE_LOCKED_WITH_PHARMACIEN: '🔒 Vendeuse verrouillée (cascade)',
+      VENDEUSE_UNLOCKED_BY_PHARMACIEN: '🔓 Vendeuse déverrouillée (cascade)',
+      PAYMENT_MARKED_PAID: '✅ Paiement marqué payé',
+      PAYMENT_MARKED_UNPAID: '❌ Paiement marqué non payé',
+      PAYMENT_WARNING_SENT: '💰 Avertissement envoyé',
+      PAYMENT_WARNING_DISABLED: '💰 Avertissement désactivé',
+    };
+
+    const listenLogs = () => {
+      if (unsubLogs) unsubLogs();
+      try {
+        const qLogs = query(collection(db, 'admin_logs'), orderBy('timestamp','desc'), limit(100));
+        unsubLogs = onSnapshot(qLogs, (snap) => {
+          allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          renderLogs();
+        }, (err) => {
+          console.error('Erreur admin_logs:', err);
+          showAlert('error', 'Erreur de chargement des activités');
+        });
+      } catch (e) {
+        console.error('listenLogs error:', e);
+      }
+    };
+
+    const renderLogs = () => {
+      const term = (el.logsSearch.value || '').toLowerCase();
+      const actionF = el.logsActionFilter.value;
+
+      const filtered = allLogs.filter(l => {
+        const actionOk = !actionF || l.action === actionF;
+        const text = [
+          l.action || '',
+          l.adminEmail || '',
+          l.targetEmail || '',
+          l.details || '',
+        ].join(' ').toLowerCase();
+        const searchOk = !term || text.includes(term);
+        return actionOk && searchOk;
+      });
+
+      if (filtered.length === 0) {
+        el.logsTable.innerHTML = '';
+        el.logsEmpty.classList.remove('hidden');
+        return;
+      }
+      el.logsEmpty.classList.add('hidden');
+
+      let html = '';
+      for (const log of filtered) {
+        const admin = log.adminEmail || '—';
+        const target = log.targetEmail || log.targetUid || '—';
+        const actionLabel = ACTION_LABEL[log.action] || log.action || '—';
+        const when = formatRelative(log.timestamp) + ` (${formatDate(log.timestamp)})`;
+
+        // Tenter de retrouver la société de la cible si elle est encore dans allUsers
+        let company = '—';
+        if (log.targetUid) {
+          const u = allUsers.find(x => x.uid === log.targetUid);
+          if (u) company = getCompanyName(u) || '—';
+        }
+
+        html += `
+          <tr>
+            <td title="${formatDate(log.timestamp)||'-'}">${when}</td>
+            <td>${actionLabel}</td>
+            <td>${admin}</td>
+            <td>${target}</td>
+            <td>${company}</td>
+            <td>${log.details || '—'}</td>
+          </tr>`;
+      }
+      el.logsTable.innerHTML = html;
+    };
+
+    /* ==== Firestore listeners (sociétés / users) ==== */
+    const listenSocietes = () => {
+      if (unsubSocietes) unsubSocietes();
+      try {
+        const societesQuery = query(collection(db, 'societes'));
+        unsubSocietes = onSnapshot(societesQuery, snap => {
+          allSocietes = {};
+          snap.forEach(d => allSocietes[d.id] = { id: d.id, ...d.data() });
+          updateCompanyFilter();
+          renderUsers();
+          renderLogs(); // mise à jour des colonnes société si possible
+        }, err => {
+          console.warn('⚠️ Collection "societes" indisponible:', err?.message);
+          updateCompanyFilter(); renderUsers(); renderLogs();
+        });
+      } catch (e) {
+        console.warn('⚠️ listenSocietes erreur:', e?.message);
+      }
     };
 
     const listenUsers = () => {
       if (unsubUsers) unsubUsers();
-      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-      unsubUsers = onSnapshot(q, snap => {
+
+      let qRef;
+      try { qRef = query(collection(db, 'users'), orderBy('createdAt','desc')); }
+      catch { qRef = collection(db, 'users'); }
+
+      unsubUsers = onSnapshot(qRef, snap => {
         allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-        renderUsers();
+        const hasCompanyId = allUsers.some(u => u.societeId || u.companyId || u.company_id);
+        if (hasCompanyId) listenSocietes(); else { updateCompanyFilter(); renderUsers(); renderLogs(); }
       }, err => {
-        console.error('Erreur Firebase:', err);
+        console.error('Erreur Firebase users:', err);
         showAlert('error', "Erreur de chargement des utilisateurs");
       });
     };
 
-    // --------- TOGGLES ---------
+    /* ==== Actions (paiement / verrouillage / avertissement) ==== */
+    window.togglePayment = async (uid, isPaid) => {
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return showAlert('error', 'Utilisateur introuvable');
+      try {
+        await updateDoc(doc(db, 'users', uid), {
+          isPaid: !!isPaid,
+          paidAt: isPaid ? serverTimestamp() : deleteField(),
+          paidBy: isPaid ? currentUser?.email || 'admin' : deleteField()
+        });
+        await addDoc(collection(db, 'admin_logs'), {
+          action: isPaid ? 'PAYMENT_MARKED_PAID' : 'PAYMENT_MARKED_UNPAID',
+          adminUid: currentUser?.uid || null,
+          adminEmail: currentUser?.email || null,
+          targetUid: uid,
+          targetEmail: u.email || null,
+          details: `Paiement marqué comme ${isPaid ? 'payé' : 'non payé'}`,
+          timestamp: serverTimestamp()
+        });
+        showAlert('success', `Paiement de ${u.email || 'utilisateur'} marqué comme ${isPaid ? 'payé' : 'non payé'}`);
+        setTimeout(() => { renderUsers(); }, 300);
+      } catch (e) {
+        console.error('togglePayment:', e);
+        showAlert('error', `Erreur: ${e.message}`);
+      }
+    };
 
-    // Verrouiller / Déverrouiller
     window.toggleLock = async (uid) => {
       const u = allUsers.find(x => x.uid === uid);
       if (!u) return showAlert('error', 'Utilisateur introuvable');
 
       const isLocked = (u.locked === true) || (u.status === 'disabled');
+      const isPharmacien = ['docteur','pharmacien','user','admin'].includes(u.role);
 
       try {
         if (!isLocked) {
-          // LOCK
+          // ----- VERROUILLER -----
           const title = prompt("Titre du popup (utilisateur)", "🔒 Compte verrouillé") || "🔒 Compte verrouillé";
           const message = prompt("Message du popup", "Votre compte a été verrouillé par l'administrateur. Contactez le support.") || "Votre compte a été verrouillé par l'administrateur. Contactez le support.";
           const details = prompt("Détails (facultatif)", "Raison: sécurité / usage.") || "Raison: sécurité / usage.";
           const hours = parseInt(prompt("Durée du popup (heures)", "24"), 10) || 24;
           const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
 
-          if (!confirm(`Confirmer VERROUILLAGE de ${u.email} ?`)) return;
+          if (!confirm(`Confirmer VERROUILLAGE de ${u.email || 'cet utilisateur'} ?`)) return;
 
           await updateDoc(doc(db, 'users', uid), {
-            status: 'disabled',
-            locked: true,
-            lockedAt: serverTimestamp(),
-            lockedBy: currentUser.email,
-            adminPopup: {
-              status: 'active',
-              type: 'lockNotice',
-              title, message, details,
-              issuedAt: serverTimestamp(),
-              expiryDate: expiryISO,
-              issuedBy: currentUser.email
-            }
+            status: 'disabled', locked: true,
+            lockedAt: serverTimestamp(), lockedBy: currentUser?.email || 'admin',
+            adminPopup: { status:'active', type:'lockNotice', title, message, details, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
           });
-
           await addDoc(collection(db, 'admin_logs'), {
-            action: 'USER_LOCKED',
-            adminUid: currentUser.uid,
-            adminEmail: currentUser.email,
-            targetUid: uid,
-            targetEmail: u.email,
-            details: `Compte verrouillé + popup admin (${hours}h).`,
-            timestamp: serverTimestamp()
+            action: 'USER_LOCKED', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
+            targetUid: uid, targetEmail: u.email || null,
+            details: `Compte verrouillé + popup admin (${hours}h).`, timestamp: serverTimestamp()
           });
+          showAlert('success', `Utilisateur ${u.email || ''} verrouillé avec succès.`);
 
-          showAlert('success', `Utilisateur ${u.email} verrouillé avec succès.`);
+          if (isPharmacien) {
+            const vendeuses = getVendeusesOfPharmacien(u);
+            if (vendeuses.length > 0) {
+              const batch = writeBatch(db);
+              for (const v of vendeuses) {
+                batch.update(doc(db,'users',v.uid), {
+                  status:'disabled', locked:true, lockedAt:serverTimestamp(), lockedBy: currentUser?.email || 'admin',
+                  adminPopup:{ status:'active', type:'lockNotice', title:'🔒 Compte verrouillé', message:'Votre compte a été verrouillé car le pharmacien de votre société est verrouillé.', details:`Pharmacien: ${u.email || 'inconnu'}.`, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
+                });
+              }
+              await batch.commit();
+              for (const v of vendeuses) {
+                await addDoc(collection(db,'admin_logs'), {
+                  action:'VENDEUSE_LOCKED_WITH_PHARMACIEN', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
+                  targetUid:v.uid, targetEmail:v.email || null,
+                  details:`Vendeuse verrouillée automatiquement car le pharmacien ${u.email || ''} a été verrouillé.`, timestamp: serverTimestamp()
+                });
+              }
+              showAlert('warning', `${vendeuses.length} vendeuse(s) de la société ont été verrouillées automatiquement.`);
+            }
+          }
+          setTimeout(() => { renderUsers(); }, 300);
         } else {
-          // UNLOCK
+          // ----- DÉVERROUILLER -----
           const hours = parseInt(prompt("Durée du popup d'info (heures)", "12"), 10) || 12;
           const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+          if (!confirm(`Déverrouiller ${u.email || 'cet utilisateur'} ?`)) return;
 
-          if (!confirm(`Déverrouiller ${u.email} ?`)) return;
+          await updateDoc(doc(db,'users',uid), {
+            status:'active', locked:false, lockedAt:deleteField(), lockedBy:deleteField(),
+            adminPopup:{ status:'active', type:'unlockNotice', title:'✅ Compte réactivé', message:'Votre accès a été rétabli.', details:`Réactivation par ${currentUser?.email || 'admin'}.`, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
+          });
+          await addDoc(collection(db,'admin_logs'), {
+            action:'USER_UNLOCKED', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
+            targetUid: uid, targetEmail: u.email || null,
+            details:`Compte déverrouillé + popup info (${hours}h).`, timestamp: serverTimestamp()
+          });
+          showAlert('success', `Utilisateur ${u.email || ''} déverrouillé avec succès.`);
 
-          await updateDoc(doc(db, 'users', uid), {
-            status: 'active',
-            locked: false,
-            lockedAt: deleteField(),
-            lockedBy: deleteField(),
-            adminPopup: {
-              status: 'active',
-              type: 'unlockNotice',
-              title: '✅ Compte réactivé',
-              message: 'Votre accès a été rétabli.',
-              details: `Réactivation par ${currentUser.email}.`,
-              issuedAt: serverTimestamp(),
-              expiryDate: expiryISO,
-              issuedBy: currentUser.email
+          if (isPharmacien) {
+            const vendeuses = getVendeusesOfPharmacien(u);
+            if (vendeuses.length > 0) {
+              const batch = writeBatch(db);
+              for (const v of vendeuses) {
+                batch.update(doc(db,'users',v.uid), {
+                  status:'active', locked:false, lockedAt:deleteField(), lockedBy:deleteField(),
+                  adminPopup:{ status:'active', type:'unlockNotice', title:'✅ Compte réactivé', message:'Votre accès a été rétabli par le pharmacien.', details:`Pharmacien: ${u.email || 'inconnu'}.`, issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin' }
+                });
+              }
+              await batch.commit();
+              for (const v of vendeuses) {
+                await addDoc(collection(db,'admin_logs'), {
+                  action:'VENDEUSE_UNLOCKED_BY_PHARMACIEN', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
+                  targetUid: v.uid, targetEmail: v.email || null,
+                  details:`Vendeuse déverrouillée automatiquement car le pharmacien ${u.email || ''} a été réactivé.`, timestamp: serverTimestamp()
+                });
+              }
+              showAlert('info', `${vendeuses.length} vendeuse(s) de la société ont été déverrouillées automatiquement.`);
             }
-          });
-
-          await addDoc(collection(db, 'admin_logs'), {
-            action: 'USER_UNLOCKED',
-            adminUid: currentUser.uid,
-            adminEmail: currentUser.email,
-            targetUid: uid,
-            targetEmail: u.email,
-            details: `Compte déverrouillé + popup info (${hours}h).`,
-            timestamp: serverTimestamp()
-          });
-
-          showAlert('success', `Utilisateur ${u.email} déverrouillé avec succès.`);
+          }
+          setTimeout(() => { renderUsers(); }, 300);
         }
       } catch (e) {
-        console.error('Erreur toggle lock:', e);
+        console.error('toggleLock:', e);
         showAlert('error', `Erreur: ${e.message}`);
       }
     };
 
-    // Avertissement paiement ON/OFF
     window.togglePaymentWarning = async (uid) => {
       const u = allUsers.find(x => x.uid === uid);
       if (!u) return showAlert('error', 'Utilisateur introuvable');
-
       const isWarned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
-
       try {
         if (isWarned) {
-          if (!confirm(`Désactiver l'avertissement paiement pour ${u.email} ?`)) return;
-          
-          await updateDoc(doc(db, 'users', uid), { 
-            paymentWarning: deleteField() 
+          if (!confirm(`Désactiver l'avertissement paiement pour ${u.email || 'cet utilisateur'} ?`)) return;
+          await updateDoc(doc(db,'users',uid), { paymentWarning: deleteField() });
+          await addDoc(collection(db,'admin_logs'), {
+            action:'PAYMENT_WARNING_DISABLED', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
+            targetUid: uid, targetEmail: u.email || null, details:'Avertissement de paiement désactivé.', timestamp: serverTimestamp()
           });
-
-          await addDoc(collection(db, 'admin_logs'), {
-            action: 'PAYMENT_WARNING_DISABLED',
-            adminUid: currentUser.uid,
-            adminEmail: currentUser.email,
-            targetUid: uid,
-            targetEmail: u.email,
-            details: `Avertissement de paiement désactivé.`,
-            timestamp: serverTimestamp()
-          });
-
-          showAlert('success', `Avertissement désactivé pour ${u.email}.`);
+          showAlert('success', `Avertissement désactivé pour ${u.email || ''}.`);
         } else {
           const hours = parseInt(prompt("Durée (heures)", "24"), 10) || 24;
           const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-          
-          if (!confirm(`Envoyer AVERTISSEMENT de paiement à ${u.email} (${hours}h) ?`)) return;
-
-          await updateDoc(doc(db, 'users', uid), {
-            paymentWarning: {
-              status: 'active',
-              issuedAt: serverTimestamp(),
-              expiryDate: expiryISO,
-              issuedBy: currentUser.email,
-              reason: 'payment'
-            }
+          if (!confirm(`Envoyer AVERTISSEMENT de paiement à ${u.email || 'cet utilisateur'} (${hours}h) ?`)) return;
+          await updateDoc(doc(db,'users',uid), {
+            paymentWarning: { status:'active', issuedAt:serverTimestamp(), expiryDate:expiryISO, issuedBy: currentUser?.email || 'admin', reason:'payment' }
           });
-
-          await addDoc(collection(db, 'admin_logs'), {
-            action: 'PAYMENT_WARNING_SENT',
-            adminUid: currentUser.uid,
-            adminEmail: currentUser.email,
-            targetUid: uid,
-            targetEmail: u.email,
-            details: `Avertissement paiement envoyé (${hours}h).`,
-            timestamp: serverTimestamp()
+          await addDoc(collection(db,'admin_logs'), {
+            action:'PAYMENT_WARNING_SENT', adminUid: currentUser?.uid || null, adminEmail: currentUser?.email || null,
+            targetUid: uid, targetEmail: u.email || null, details:`Avertissement paiement envoyé (${hours}h).`, timestamp: serverTimestamp()
           });
-
-          showAlert('success', `Avertissement envoyé à ${u.email}.`);
+          showAlert('success', `Avertissement envoyé à ${u.email || ''}.`);
         }
       } catch (e) {
-        console.error('Erreur payment warning:', e);
+        console.error('togglePaymentWarning:', e);
         showAlert('error', `Erreur: ${e.message}`);
       }
     };
 
-    // ---- Initialisation UI/Auth ----
+    /* ==== UI / Auth ==== */
+    const updateUI = (user) => {
+      if (user) {
+        currentUser = user;
+        isAdmin = user.email === ADMIN_EMAIL;
+        el.loginForm.classList.add('hidden');
+        el.userInfo.classList.remove('hidden');
+        el.userEmail.textContent = user.email || '';
+        el.userAvatar.textContent = (user.email || 'A').substring(0,2).toUpperCase();
+
+        if (isAdmin) {
+          el.adminInterface.classList.remove('hidden');
+          el.loginPrompt.classList.add('hidden');
+          listenUsers();
+          listenLogs();
+        } else {
+          el.adminInterface.classList.add('hidden');
+          el.loginPrompt.classList.remove('hidden');
+          if (unsubUsers) unsubUsers();
+          if (unsubSocietes) unsubSocietes();
+          if (unsubLogs) unsubLogs();
+          el.usersTable.innerHTML = '';
+          el.logsTable.innerHTML = '';
+        }
+      } else {
+        currentUser = null; isAdmin = false;
+        el.loginForm.classList.remove('hidden');
+        el.userInfo.classList.add('hidden');
+        el.adminInterface.classList.add('hidden');
+        el.loginPrompt.classList.remove('hidden');
+        if (unsubUsers) unsubUsers();
+        if (unsubSocietes) unsubSocietes();
+        if (unsubLogs) unsubLogs();
+        allUsers = []; allSocietes = {}; allLogs = [];
+        el.usersTable.innerHTML = '';
+        el.logsTable.innerHTML = '';
+      }
+    };
+
     el.loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       el.loginBtn.disabled = true;
       el.loginBtn.textContent = 'Connexion...';
-      
-      // Annonce pour les lecteurs d'écran
       const statusEl = document.getElementById('login-status');
       statusEl.textContent = 'Tentative de connexion en cours...';
-      
       try {
         await signInWithEmailAndPassword(auth, el.email.value, el.password.value);
         showAlert('success', 'Connexion réussie !');
@@ -1042,51 +795,38 @@
       } finally {
         el.loginBtn.disabled = false;
         el.loginBtn.textContent = 'Connexion';
-        // Nettoie le message après 3 secondes
-        setTimeout(() => {
-          statusEl.textContent = '';
-        }, 3000);
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
       }
     });
 
     el.logoutBtn.addEventListener('click', async () => {
-      try {
-        await signOut(auth);
-        showAlert('info', 'Déconnexion réussie');
-      } catch (err) {
-        showAlert('error', `Erreur déconnexion: ${err.message}`);
-      }
+      try { await signOut(auth); showAlert('info','Déconnexion réussie'); }
+      catch (err) { showAlert('error', `Erreur déconnexion: ${err.message}`); }
     });
 
-    // Event listeners pour les filtres
+    // Filtres utilisateurs
     el.searchUsers.addEventListener('input', renderUsers);
     el.roleFilter.addEventListener('change', renderUsers);
+    el.companyFilter.addEventListener('change', renderUsers);
     el.statusFilter.addEventListener('change', renderUsers);
-    
-    // Bouton actualiser
+
+    // Filtres activités
+    el.logsSearch.addEventListener('input', renderLogs);
+    el.logsActionFilter.addEventListener('change', renderLogs);
+    el.refreshLogs.addEventListener('click', () => { listenLogs(); showAlert('info','Activités actualisées'); });
+
     document.getElementById('refreshUsers').addEventListener('click', () => {
-      if (isAdmin) {
-        listenUsers();
-        showAlert('info', 'Liste des utilisateurs actualisée');
-      }
+      if (isAdmin) { listenUsers(); showAlert('info', 'Liste des utilisateurs actualisée'); }
     });
 
-    // Observer les changements d'auth
-    onAuthStateChanged(auth, (user) => {
-      updateUI(user);
-    });
+    onAuthStateChanged(auth, updateUI);
 
-    // Gestion des erreurs globales
     window.addEventListener('error', (e) => {
       console.error('Erreur globale:', e.error);
       showAlert('error', 'Une erreur inattendue s\'est produite');
     });
 
-    // Log de démarrage
-    console.log('🔐 Administration Anapharmo - Version Responsive avec accessibilité améliorée chargée');
-    console.log('✅ Attributs autocomplete ajoutés');
-    console.log('✅ Support des lecteurs d\'écran amélioré');
-    console.log('✅ Navigation au clavier optimisée');
+    console.log('🔐 Administration Anapharmo — activités récentes ajoutées (recherche + filtre), verrouillage pharmacien ⇄ vendeuses en cascade.');
   </script>
 </body>
 </html>
