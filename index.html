@@ -11,198 +11,65 @@
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Arial;line-height:1.5}
-    
     header{padding:16px 24px;background:#15223a;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--line)}
     h1{margin:0;font-size:24px;font-weight:600}
-    
     .card{background:var(--panel);border:1px solid #223355;border-radius:14px;padding:20px;margin:16px;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
     .card h2{margin-top:0;color:var(--text);font-size:18px}
-    
-    input,button,select,textarea{border-radius:8px;border:1px solid var(--brand2);background:#0e1830;color:#fff;padding:10px 16px;font-size:14px}
-    button{background:var(--brand);cursor:pointer;transition:all 0.2s;font-weight:500}
-    button:hover{filter:brightness(1.2);transform:translateY(-1px)}
-    button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    input,button,select{border-radius:8px;border:1px solid var(--brand2);background:#0e1830;color:#fff;padding:10px 16px;font-size:14px}
+    button{background:var(--brand);cursor:pointer;transition:all .2s;font-weight:500}
+    button:hover{filter:brightness(1.15);transform:translateY(-1px)}
+    button:disabled{opacity:.6;cursor:not-allowed}
     button.danger{background:#dc2626;border-color:#dc2626}
     button.success{background:#059669;border-color:#059669}
     button.warning{background:#f59e0b;border-color:#f59e0b}
-    button.info{background:#3b82f6;border-color:#3b82f6}
-    button.payment{background:#ff6600;border-color:#ff6600;color:white}
-    
+    button.payment{background:#ff6600;border-color:#ff6600}
     .hidden{display:none !important}
-    .loading{opacity:0.6;pointer-events:none}
-    
     table{width:100%;border-collapse:collapse;margin-top:16px}
     th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;font-size:14px}
-    th{background:rgba(26,42,74,0.5);font-weight:600;color:var(--text)}
-    tr:hover{background:rgba(32,48,84,0.3)}
-    
+    th{background:rgba(26,42,74,.5);font-weight:600}
+    tr:hover{background:rgba(32,48,84,.3)}
     .status-active{color:var(--ok);font-weight:500}
     .status-disabled{color:var(--bad);font-weight:500}
-    .status-warned{color:var(--warning);font-weight:500}
-    
+    .payment-warning-badge{display:inline-flex;gap:4px;padding:2px 6px;border-radius:10px;background:rgba(245,158,11,.2);border:1px solid #f59e0b;font-size:10px;color:var(--warning);font-weight:700}
     .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .pill{display:inline-block;padding:4px 12px;border-radius:16px;border:1px solid var(--line);font-size:12px;font-weight:500}
-    .pill.admin{background:var(--brand);border-color:var(--brand)}
-    .pill.user{background:rgba(139,146,176,0.2);border-color:var(--muted)}
-    
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
-    .stat-card{background:rgba(26,42,74,0.3);padding:16px;border-radius:8px;text-align:center}
-    .stat-number{font-size:28px;font-weight:bold;color:var(--ok)}
-    .stat-label{font-size:14px;color:var(--muted);margin-top:4px}
-    
-    .actions{display:flex;gap:6px}
-    .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999}
-    .modal-content{background:var(--panel);border-radius:12px;padding:24px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
-    
-    .logs-section{max-height:400px;overflow-y:auto;margin-top:16px}
-    .log-entry{padding:8px 12px;margin:4px 0;background:rgba(32,48,84,0.2);border-radius:6px;font-size:13px}
-    .log-timestamp{color:var(--muted);font-size:11px}
-    
-    .search-bar{width:100%;max-width:300px;margin-bottom:16px}
-    .role-badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold}
-    .role-admin{background:#dc2626;color:white}
-    .role-user{background:#6b7280;color:white}
-    .role-moderator{background:#059669;color:white}
-    
-    .alert{padding:12px 16px;border-radius:8px;margin-bottom:16px}
-    .alert-success{background:rgba(5,150,105,0.2);border:1px solid #059669;color:var(--ok)}
-    .alert-error{background:rgba(220,38,38,0.2);border:1px solid #dc2626;color:var(--bad)}
-    .alert-warning{background:rgba(255,217,61,0.2);border:1px solid #ffd93d;color:var(--warning)}
-    .alert-info{background:rgba(59,130,246,0.2);border:1px solid #3b82f6;color:#3b82f6}
-
-    .connection-status{display:flex;align-items:center;gap:8px;font-size:14px}
-    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);transition:all 0.3s ease}
-    .status-dot.offline{background:var(--bad);animation:pulse 2s infinite}
-    .status-dot.connecting{background:var(--warning);animation:pulse 1s infinite}
-    .status-dot.reconnecting{background:#ff6b35;animation:pulse 0.5s infinite}
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.2); }
-    }
-
-    .login-form{display:flex;gap:12px;align-items:center}
-    .user-info{display:flex;align-items:center;gap:12px}
-    .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:bold}
-    
-    .auto-admin-notice{background:rgba(255,217,61,0.1);border:1px solid var(--warning);border-radius:8px;padding:12px;margin:16px 0;color:var(--warning)}
-
-    /* Styles pour les avertissements de paiement */
-    .payment-warning-badge{
-      display:inline-flex;align-items:center;gap:4px;padding:2px 6px;
-      border-radius:10px;background:rgba(245,158,11,0.2);border:1px solid #f59e0b;
-      font-size:10px;color:var(--warning);font-weight:bold;
-    }
-    
-    .countdown-timer{color:var(--warning);font-size:11px;font-weight:bold;}
-    .expired-warning{color:var(--bad);font-size:11px;font-weight:bold;}
-    
-    .network-status{
-      display:flex;align-items:center;gap:8px;padding:8px 12px;
-      background:rgba(32,48,84,0.3);border-radius:8px;font-size:12px;
-    }
-    .network-quality{
-      display:flex;gap:2px;align-items:end;
-    }
-    .network-bar{
-      width:3px;height:8px;background:var(--muted);border-radius:1px;
-    }
-    .network-bar.active{background:var(--ok);}
-    .network-bar.weak{background:var(--warning);}
-    .network-bar.poor{background:var(--bad);}
-    
-    .offline-indicator{
-      background:rgba(220,38,38,0.2);border:1px solid #dc2626;
-      border-radius:8px;padding:8px 12px;margin:8px 0;color:var(--bad);
-      font-size:12px;text-align:center;
-    }
+    .alert{padding:12px 16px;border-radius:8px;margin:16px}
+    .alert-success{background:rgba(5,150,105,.2);border:1px solid #059669;color:var(--ok)}
+    .alert-error{background:rgba(220,38,38,.2);border:1px solid #dc2626;color:var(--bad)}
+    .alert-warning{background:rgba(255,217,61,.2);border:1px solid #ffd93d;color:var(--warning)}
+    .alert-info{background:rgba(59,130,246,.2);border:1px solid #3b82f6;color:#3b82f6}
   </style>
 </head>
 <body>
   <header>
     <h1>🔐 Administration Anapharmo</h1>
-    <div id="authContainer">
+    <div id="auth">
       <form id="loginForm" class="login-form">
-        <input id="email" type="email" placeholder="admin@email.com" autocomplete="username" required />
-        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+        <input id="email" type="email" placeholder="admin@email.com" required />
+        <input id="password" type="password" placeholder="••••••••" required />
         <button type="submit" id="loginBtn">Connexion</button>
       </form>
-      
-      <div id="userInfo" class="user-info hidden">
-        <div class="network-status">
-          <div class="connection-status">
-            <div class="status-dot" id="connectionDot"></div>
-            <span id="connectionStatus">Connecté</span>
-          </div>
-          <div class="network-quality">
-            <div class="network-bar" id="bar1"></div>
-            <div class="network-bar" id="bar2"></div>
-            <div class="network-bar" id="bar3"></div>
-            <div class="network-bar" id="bar4"></div>
-          </div>
-          <span id="networkQuality">Excellent</span>
-        </div>
-        <div class="user-avatar" id="userAvatar">A</div>
+      <div id="userInfo" class="hidden" style="display:flex;align-items:center;gap:10px;">
+        <div id="userAvatar" style="width:32px;height:32px;border-radius:50%;background:#1a2a4a;display:flex;align-items:center;justify-content:center;font-weight:700;">A</div>
         <span id="userEmail">user@email.com</span>
         <button id="logoutBtn" class="danger">Déconnexion</button>
       </div>
     </div>
   </header>
 
-  <div id="offlineIndicator" class="offline-indicator hidden">
-    🌐 Mode hors ligne - Reconnexion automatique en cours...
-  </div>
-
   <div id="alertContainer"></div>
-
-  <div class="card hidden" id="statsCard">
-    <h2>📊 Tableau de bord</h2>
-    <div class="stats-grid" id="statsGrid">
-      <div class="stat-card">
-        <div class="stat-number" id="totalUsers">-</div>
-        <div class="stat-label">Total utilisateurs</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" style="color: var(--ok)" id="activeUsers">-</div>
-        <div class="stat-label">Utilisateurs actifs</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" style="color: var(--bad)" id="disabledUsers">-</div>
-        <div class="stat-label">Utilisateurs désactivés</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" style="color: var(--warning)" id="warnedUsers">-</div>
-        <div class="stat-label">Avertis paiement</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" style="color: var(--brand)" id="adminUsers">-</div>
-        <div class="stat-label">Administrateurs</div>
-      </div>
-    </div>
-  </div>
 
   <div class="card">
     <h2>👥 Gestion des utilisateurs</h2>
-    
+
     <div id="adminInterface" class="hidden">
-      <div class="auto-admin-notice">
-        <strong>🔧 Mode administrateur automatique activé</strong><br>
-        Votre email (echchaaba0178@gmail.com) a automatiquement les droits administrateur.
-      </div>
-      
       <div class="toolbar">
-        <input id="searchUsers" class="search-bar" placeholder="🔍 Rechercher un utilisateur..." />
-        <button id="refreshUsers">🔄 Actualiser</button>
-        <button id="toggleNetworkTestBtn" class="warning">🌐 Désactiver tests réseau</button>
-        <button id="createAdminProfileBtn" class="success">👑 Créer mon profil admin</button>
-        <button id="cleanupDataBtn" class="danger">🧹 Nettoyer les données</button>
-        <button id="editCompanyBtn" class="success">🏢 Modifier ma société</button>
+        <input id="searchUsers" class="search-bar" placeholder="🔍 Rechercher..." />
         <select id="roleFilter">
           <option value="">Tous les rôles</option>
-          <option value="admin">Médecins/Admins</option>
-          <option value="vendeuse">Vendeuses</option>
-          <option value="moderator">Modérateurs</option>
-          <option value="user">Utilisateurs</option>
+          <option value="admin">Admin</option>
+          <option value="vendeuse">Vendeuse</option>
+          <option value="moderator">Modérateur</option>
+          <option value="user">Utilisateur</option>
         </select>
         <select id="statusFilter">
           <option value="">Tous les statuts</option>
@@ -210,9 +77,7 @@
           <option value="disabled">Désactivés</option>
           <option value="warned">Avertis paiement</option>
         </select>
-        <select id="companyFilter">
-          <option value="">Toutes les sociétés</option>
-        </select>
+        <button id="refreshUsers">🔄 Actualiser</button>
       </div>
 
       <div id="usersTableContainer">
@@ -221,7 +86,6 @@
             <tr>
               <th>👤 Utilisateur</th>
               <th>📧 Email</th>
-              <th>🏢 Société</th>
               <th>🏷️ Rôle</th>
               <th>📊 Statut</th>
               <th>📅 Créé le</th>
@@ -232,88 +96,17 @@
         </table>
       </div>
     </div>
-    
+
     <div id="loginPrompt" class="alert alert-info">
-      🔒 <strong>Connexion requise</strong><br>
-      Connectez-vous avec un compte administrateur pour gérer les utilisateurs.
-    </div>
-  </div>
-
-  <div class="card hidden" id="logsCard">
-    <h2>📝 Journal d'activité</h2>
-    <div class="logs-section" id="logsContainer">
-      <div style="text-align: center; padding: 20px; color: var(--muted);">
-        Aucune activité récente
-      </div>
-    </div>
-  </div>
-
-  <div id="confirmModal" class="modal hidden">
-    <div class="modal-content">
-      <h3 id="modalTitle">Confirmation</h3>
-      <p id="modalMessage">Êtes-vous sûr de vouloir effectuer cette action ?</p>
-      <div class="toolbar" style="justify-content: flex-end; margin-top: 20px;">
-        <button id="modalCancel">Annuler</button>
-        <button id="modalConfirm" class="danger">Confirmer</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="companyModal" class="modal hidden">
-    <div class="modal-content">
-      <h3>🏢 Modifier le nom de société</h3>
-      <p>Cette société sera associée à votre compte et à tous vos employés (vendeuses).</p>
-      <div style="margin: 16px 0;">
-        <label for="companyNameInput" style="display: block; margin-bottom: 8px;">Nom de la société :</label>
-        <input id="companyNameInput" type="text" placeholder="Ex: Pharmacie Central, Cabinet Dr. Martin..." style="width: 100%;" />
-      </div>
-      <div class="alert alert-info" style="margin: 16px 0;">
-        <strong>💡 Info :</strong> Ce nom apparaîtra à côté de votre nom et de celui de vos vendeuses dans tout le système.
-      </div>
-      <div class="toolbar" style="justify-content: flex-end; margin-top: 20px;">
-        <button id="companyCancel">Annuler</button>
-        <button id="companyConfirm" class="success">Enregistrer</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="roleModal" class="modal hidden">
-    <div class="modal-content">
-      <h3>Modifier le rôle utilisateur</h3>
-      <p id="roleModalUser">Utilisateur: </p>
-      <div style="margin: 16px 0;">
-        <label for="newRoleSelect" style="display: block; margin-bottom: 8px;">Nouveau rôle :</label>
-        <select id="newRoleSelect" style="width: 100%;">
-          <option value="user">👤 Utilisateur</option>
-          <option value="vendeuse">🛒 Vendeuse</option>
-          <option value="moderator">🛡️ Modérateur</option>
-          <option value="admin">👑 Médecin/Admin</option>
-        </select>
-      </div>
-      <div class="alert alert-warning" style="margin: 16px 0;">
-        <strong>⚠️ Attention :</strong> Les changements de rôle prennent effet immédiatement.
-      </div>
-      <div class="toolbar" style="justify-content: flex-end; margin-top: 20px;">
-        <button id="roleCancel">Annuler</button>
-        <button id="roleConfirm" class="success">Modifier</button>
-      </div>
+      🔒 <strong>Connexion requise</strong> — Connectez-vous avec un compte administrateur.
     </div>
   </div>
 
   <script type="module">
-    // Firebase SDK imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { 
-      getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { 
-      getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, limit, getDocs, where, setDoc, getDoc, serverTimestamp, addDoc, deleteDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, limit, serverTimestamp, addDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // --- 🚨 ALERTE SÉCURITÉ ---
-    // Ne JAMAIS exposer vos clés API directement dans le code client.
-    // Utilisez des variables d'environnement et un outil de build (ex: Vite, Webpack)
-    // ou chargez la configuration depuis une fonction backend sécurisée.
     const firebaseConfig = {
       apiKey: "AIzaSyBHQSPXwED7W-FQMMs1D-OZcjW-5AP8A-w",
       authDomain: "anapharmo.firebaseapp.com",
@@ -323,432 +116,306 @@
       appId: "1:1097322827362:web:fd19a67d9af135dcbf4b3b",
       measurementId: "G-JX6HCRX075"
     };
-
-    // Initialisation Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // --- 🔒 NOTE DE SÉCURITÉ ---
-    // La meilleure pratique est d'utiliser les "Custom Claims" de Firebase Auth
-    // pour gérer les rôles de manière sécurisée côté serveur.
     const ADMIN_EMAIL = "echchaaba0178@gmail.com";
 
-    // --- Éléments DOM ---
-    const elements = {
-      // Authentification
+    const el = {
       loginForm: document.getElementById('loginForm'),
-      userInfo: document.getElementById('userInfo'),
+      loginBtn: document.getElementById('loginBtn'),
       email: document.getElementById('email'),
       password: document.getElementById('password'),
-      loginBtn: document.getElementById('loginBtn'),
-      logoutBtn: document.getElementById('logoutBtn'),
+      userInfo: document.getElementById('userInfo'),
       userEmail: document.getElementById('userEmail'),
       userAvatar: document.getElementById('userAvatar'),
-      connectionDot: document.getElementById('connectionDot'),
-      connectionStatus: document.getElementById('connectionStatus'),
-      networkQuality: document.getElementById('networkQuality'),
-      offlineIndicator: document.getElementById('offlineIndicator'),
-      
-      // Interface
-      alertContainer: document.getElementById('alertContainer'),
-      loginPrompt: document.getElementById('loginPrompt'),
+      logoutBtn: document.getElementById('logoutBtn'),
       adminInterface: document.getElementById('adminInterface'),
-      statsCard: document.getElementById('statsCard'),
-      logsCard: document.getElementById('logsCard'),
-      
-      // Statistiques
-      totalUsers: document.getElementById('totalUsers'),
-      activeUsers: document.getElementById('activeUsers'),
-      disabledUsers: document.getElementById('disabledUsers'),
-      warnedUsers: document.getElementById('warnedUsers'),
-      adminUsers: document.getElementById('adminUsers'),
-      
-      // Gestion utilisateurs
+      loginPrompt: document.getElementById('loginPrompt'),
+      usersTable: document.getElementById('usersTable'),
       searchUsers: document.getElementById('searchUsers'),
-      refreshUsers: document.getElementById('refreshUsers'),
-      toggleNetworkTestBtn: document.getElementById('toggleNetworkTestBtn'),
-      createAdminProfileBtn: document.getElementById('createAdminProfileBtn'),
-      cleanupDataBtn: document.getElementById('cleanupDataBtn'),
-      editCompanyBtn: document.getElementById('editCompanyBtn'),
       roleFilter: document.getElementById('roleFilter'),
       statusFilter: document.getElementById('statusFilter'),
-      companyFilter: document.getElementById('companyFilter'),
-      usersTable: document.getElementById('usersTable'),
-      logsContainer: document.getElementById('logsContainer'),
-      
-      // Modales
-      confirmModal: document.getElementById('confirmModal'),
-      roleModal: document.getElementById('roleModal'),
-      companyModal: document.getElementById('companyModal'),
-      modalTitle: document.getElementById('modalTitle'),
-      modalMessage: document.getElementById('modalMessage'),
-      modalCancel: document.getElementById('modalCancel'),
-      modalConfirm: document.getElementById('modalConfirm'),
-      roleModalUser: document.getElementById('roleModalUser'),
-      newRoleSelect: document.getElementById('newRoleSelect'),
-      roleCancel: document.getElementById('roleCancel'),
-      roleConfirm: document.getElementById('roleConfirm'),
-      companyNameInput: document.getElementById('companyNameInput'),
-      companyCancel: document.getElementById('companyCancel'),
-      companyConfirm: document.getElementById('companyConfirm')
+      alertContainer: document.getElementById('alertContainer')
     };
 
-    // --- Variables globales ---
     let currentUser = null;
     let isAdmin = false;
     let allUsers = [];
-    let unsubscribeUsers = null;
-    let unsubscribeLogs = null;
-    let networkManager = null;
-    
-    // --- Utilitaires ---
-    const showAlert = (type, message, duration = 5000) => {
-      const alert = document.createElement('div');
-      alert.className = `alert alert-${type}`;
-      alert.innerHTML = `<strong>${type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}</strong> ${message}`;
-      elements.alertContainer.appendChild(alert);
-      setTimeout(() => alert.style.opacity = '0', duration - 500);
-      setTimeout(() => alert.remove(), duration);
-    };
+    let unsubUsers = null;
+    let unsubLogs = null;
 
-    const formatDate = (timestamp) => {
-      if (!timestamp) return 'N/A';
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const showAlert = (type, message, duration = 4000) => {
+      const a = document.createElement('div');
+      a.className = `alert alert-${type}`;
+      a.innerHTML = `<strong>${type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}</strong> ${message}`;
+      el.alertContainer.appendChild(a);
+      setTimeout(() => a.style.opacity = '0', duration - 500);
+      setTimeout(() => a.remove(), duration);
     };
-
+    const formatDate = (ts) => {
+      if (!ts) return '-';
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
     const formatRole = (role) => {
-      const roleMap = {
-        admin: { text: '👨‍⚕️ Médecin/Admin', class: 'role-admin' },
-        vendeuse: { text: '🛒 Vendeuse', class: 'role-moderator' },
-        moderator: { text: '🛡️ Modérateur', class: 'role-moderator' },
-        user: { text: '👤 Utilisateur', class: 'role-user' }
-      };
-      const { text, class: className } = roleMap[role] || roleMap.user;
-      return `<span class="role-badge ${className}">${text}</span>`;
+      const map = { admin:'Admin', vendeuse:'Vendeuse', moderator:'Modérateur', user:'Utilisateur' };
+      return map[role] || 'Utilisateur';
     };
-    
-    // --- Logique principale ---
-    
-    /**
-     * Met à jour l'interface en fonction de l'état de l'utilisateur (connecté/déconnecté, admin/non-admin)
-     */
+
     const updateUI = (user) => {
       if (user) {
         currentUser = user;
         isAdmin = user.email === ADMIN_EMAIL;
-        
-        elements.loginForm.classList.add('hidden');
-        elements.userInfo.classList.remove('hidden');
-        elements.loginPrompt.classList.add('hidden');
-        
-        elements.userEmail.textContent = user.email;
-        elements.userAvatar.textContent = user.email.substring(0, 2).toUpperCase();
-        
+        el.loginForm.classList.add('hidden');
+        el.userInfo.classList.remove('hidden');
+        el.userEmail.textContent = user.email;
+        el.userAvatar.textContent = user.email.substring(0,2).toUpperCase();
+
         if (isAdmin) {
-          elements.adminInterface.classList.remove('hidden');
-          elements.statsCard.classList.remove('hidden');
-          elements.logsCard.classList.remove('hidden');
-          listenToUsers();
-          listenToLogs();
+          el.adminInterface.classList.remove('hidden');
+          el.loginPrompt.classList.add('hidden');
+          listenUsers();
         } else {
-          elements.adminInterface.classList.add('hidden');
-          showAlert('warning', "Accès non autorisé. Seuls les administrateurs peuvent voir cette page.");
+          el.adminInterface.classList.add('hidden');
+          el.loginPrompt.classList.remove('hidden');
+          if (unsubUsers) unsubUsers();
         }
       } else {
-        currentUser = null;
-        isAdmin = false;
-        
-        elements.loginForm.classList.remove('hidden');
-        elements.userInfo.classList.add('hidden');
-        elements.loginPrompt.classList.remove('hidden');
-        elements.adminInterface.classList.add('hidden');
-        elements.statsCard.classList.add('hidden');
-        elements.logsCard.classList.add('hidden');
-        
-        if (unsubscribeUsers) unsubscribeUsers();
-        if (unsubscribeLogs) unsubscribeLogs();
+        currentUser = null; isAdmin = false;
+        el.loginForm.classList.remove('hidden');
+        el.userInfo.classList.add('hidden');
+        el.adminInterface.classList.add('hidden');
+        el.loginPrompt.classList.remove('hidden');
+        if (unsubUsers) unsubUsers();
         allUsers = [];
-        elements.usersTable.innerHTML = '';
+        el.usersTable.innerHTML = '';
       }
     };
-    
-    /**
-     * Affiche les utilisateurs dans le tableau, en appliquant les filtres actifs
-     * (inclut bouton d'avertissement togglable)
-     */
+
     const renderUsers = () => {
-      if (!isAdmin) return;
+      const term = (el.searchUsers.value || '').toLowerCase();
+      const roleF = el.roleFilter.value;
+      const statusF = el.statusFilter.value;
 
-      const searchTerm = elements.searchUsers.value.toLowerCase();
-      const roleFilter = elements.roleFilter.value;
-      const statusFilter = elements.statusFilter.value;
-
-      const filteredUsers = allUsers.filter(user => {
-        const searchMatch =
-          user.email.toLowerCase().includes(searchTerm) ||
-          (user.displayName && user.displayName.toLowerCase().includes(searchTerm));
-        const roleMatch = !roleFilter || user.role === roleFilter;
+      const filtered = allUsers.filter(u => {
+        const search = (u.email || '').toLowerCase().includes(term) || (u.displayName || '').toLowerCase().includes(term);
+        const roleMatch = !roleF || u.role === roleF;
         const statusMatch =
-          !statusFilter ||
-          (statusFilter === 'active' && user.status === 'active') ||
-          (statusFilter === 'disabled' && user.status === 'disabled') ||
-          (statusFilter === 'warned' && user.paymentWarning && user.paymentWarning.status === 'active');
-        return searchMatch && roleMatch && statusMatch;
+          !statusF ||
+          (statusF === 'active' && u.status === 'active') ||
+          (statusF === 'disabled' && (u.status === 'disabled' || u.locked === true)) ||
+          (statusF === 'warned' && u.paymentWarning && u.paymentWarning.status === 'active');
+        return search && roleMatch && statusMatch;
       });
 
-      if (filteredUsers.length === 0) {
-        elements.usersTable.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align: center; padding: 40px; color: var(--muted);">
-              Aucun utilisateur trouvé.
-            </td>
-          </tr>`;
+      if (filtered.length === 0) {
+        el.usersTable.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:26px;color:#8892b0">Aucun utilisateur</td></tr>`;
         return;
       }
 
-      elements.usersTable.innerHTML = filteredUsers
-        .map(user => {
-          const isWarned = !!(user.paymentWarning && user.paymentWarning.status === 'active');
-          const warnedBadge = isWarned ? `<span class="payment-warning-badge">Averti</span>` : '';
-          return `
-            <tr>
-              <td>${user.displayName || 'N/A'} ${warnedBadge}</td>
-              <td>${user.email}</td>
-              <td>${user.companyName || 'N/A'}</td>
-              <td>${formatRole(user.role)}</td>
-              <td class="${user.status === 'active' ? 'status-active' : 'status-disabled'}">${user.status}</td>
-              <td>${formatDate(user.createdAt)}</td>
-              <td class="actions">
-                <button class="${user.status === 'active' ? 'danger' : 'success'}"
-                        onclick="window.toggleUserStatus('${user.uid}')">
-                  ${user.status === 'active' ? '🚫' : '✅'}
-                </button>
-                <button class="${isWarned ? 'payment' : 'warning'}"
-                        title="${isWarned ? 'Désactiver l’avertissement' : 'Activer un avertissement 24h'}"
-                        onclick="window.togglePaymentWarning('${user.uid}')">
-                  ${isWarned ? '💸 ON' : '💰 OFF'}
-                </button>
-                <button class="info" onclick="window.openRoleModal('${user.uid}')">✏️</button>
-              </td>
-            </tr>
-          `;
-        })
-        .join('');
+      el.usersTable.innerHTML = filtered.map(u => {
+        const isLocked = (u.locked === true) || (u.status === 'disabled');
+        const isWarned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
+        const warnedBadge = isWarned ? `<span class="payment-warning-badge">Averti</span>` : '';
+        return `
+          <tr>
+            <td>${u.displayName || '—'} ${warnedBadge}</td>
+            <td>${u.email || '—'}</td>
+            <td>${formatRole(u.role)}</td>
+            <td class="${u.status === 'active' ? 'status-active' : 'status-disabled'}">${u.status || '—'}</td>
+            <td>${formatDate(u.createdAt)}</td>
+            <td class="actions">
+              <button class="${isLocked ? 'success' : 'danger'}" onclick="window.toggleLock('${u.uid}')">
+                ${isLocked ? '🔓 Déverrouiller' : '🔒 Verrouiller'}
+              </button>
+              <button class="${isWarned ? 'payment' : 'warning'}" onclick="window.togglePaymentWarning('${u.uid}')">
+                ${isWarned ? '💸 Averti ON' : '💰 Averti OFF'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     };
-    
-    /**
-     * Met à jour les cartes de statistiques
-     */
-    const updateStats = () => {
-      elements.totalUsers.textContent = allUsers.length;
-      elements.activeUsers.textContent = allUsers.filter(u => u.status === 'active').length;
-      elements.disabledUsers.textContent = allUsers.filter(u => u.status === 'disabled').length;
-      elements.adminUsers.textContent = allUsers.filter(u => u.role === 'admin').length;
-      elements.warnedUsers.textContent = allUsers.filter(u => u.paymentWarning && u.paymentWarning.status === 'active').length;
-    };
-    
-    /**
-     * Écoute les changements dans la collection 'users' de Firestore
-     */
-    const listenToUsers = () => {
-      if (unsubscribeUsers) unsubscribeUsers(); // Évite les listeners multiples
-      const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-      unsubscribeUsers = onSnapshot(q, (snapshot) => {
-        allUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+
+    const listenUsers = () => {
+      if (unsubUsers) unsubUsers();
+      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      unsubUsers = onSnapshot(q, snap => {
+        allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
         renderUsers();
-        updateStats();
-      }, (error) => {
-        console.error("Erreur d'écoute Firestore (users):", error);
-        showAlert('error', "Impossible de charger les utilisateurs en temps réel.");
-      });
-    };
-    
-    /**
-     * Écoute les changements dans la collection 'admin_logs'
-     */
-    const listenToLogs = () => {
-      if (unsubscribeLogs) unsubscribeLogs();
-      const q = query(collection(db, "admin_logs"), orderBy("timestamp", "desc"), limit(50));
-      unsubscribeLogs = onSnapshot(q, (snapshot) => {
-        if(snapshot.empty) {
-          elements.logsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">Aucune activité récente</div>';
-          return;
-        }
-        elements.logsContainer.innerHTML = snapshot.docs.map(doc => {
-          const log = doc.data();
-          return `<div class="log-entry">
-              <span class="log-timestamp">${formatDate(log.timestamp)}</span> - 
-              <strong>${log.adminEmail}</strong>: ${log.details}
-          </div>`;
-        }).join('');
-      }, (error) => {
-        console.error("Erreur d'écoute Firestore (logs):", error);
+      }, err => {
+        console.error(err);
+        showAlert('error', "Erreur de chargement des utilisateurs");
       });
     };
 
-    // --- Fonctions globales pour les boutons ---
-    
-    window.toggleUserStatus = async (uid) => {
-      const user = allUsers.find(u => u.uid === uid);
-      if (!user) return showAlert('error', 'Utilisateur non trouvé.');
+    // --------- TOGGLES ---------
 
-      const newStatus = user.status === 'active' ? 'disabled' : 'active';
-      const action = newStatus === 'disabled' ? 'désactiver' : 'activer';
-      
-      if (confirm(`Êtes-vous sûr de vouloir ${action} l'utilisateur ${user.email} ?`)) {
-        try {
-          await updateDoc(doc(db, 'users', uid), { status: newStatus });
+    // Verrouiller / Déverrouiller (adminPopup distinct du paymentWarning)
+    window.toggleLock = async (uid) => {
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return showAlert('error', 'Utilisateur introuvable');
+
+      const isLocked = (u.locked === true) || (u.status === 'disabled');
+
+      try {
+        if (!isLocked) {
+          // LOCK
+          const title = prompt("Titre du popup (utilisateur)", "🔒 Compte verrouillé") || "🔒 Compte verrouillé";
+          const message = prompt("Message du popup", "Votre compte a été verrouillé par l’administrateur. Contactez le support.") || "Votre compte a été verrouillé par l’administrateur. Contactez le support.";
+          const details = prompt("Détails (facultatif)", "Raison: sécurité / usage.") || "Raison: sécurité / usage.";
+          const hours = parseInt(prompt("Durée du popup (heures)", "24"), 10) || 24;
+          const expiryISO = new Date(Date.now() + hours*3600*1000).toISOString();
+
+          if (!confirm(`Confirmer VERROUILLAGE de ${u.email} ?`)) return;
+
+          await updateDoc(doc(db, 'users', uid), {
+            status: 'disabled',
+            locked: true,
+            lockedAt: serverTimestamp(),
+            lockedBy: currentUser.email,
+            adminPopup: {
+              status: 'active',
+              type: 'lockNotice',
+              title, message, details,
+              issuedAt: serverTimestamp(),
+              expiryDate: expiryISO,
+              issuedBy: currentUser.email
+            }
+            // on NE touche PAS à paymentWarning ici
+          });
+
           await addDoc(collection(db, 'admin_logs'), {
-            action: 'USER_STATUS_CHANGED',
+            action: 'USER_LOCKED',
             adminUid: currentUser.uid,
             adminEmail: currentUser.email,
             targetUid: uid,
-            targetEmail: user.email,
-            details: `Statut de ${user.email} changé à ${newStatus}.`,
+            targetEmail: u.email,
+            details: `Compte verrouillé + popup admin (${hours}h).`,
             timestamp: serverTimestamp()
           });
-          showAlert('success', `Utilisateur ${action} avec succès.`);
-        } catch (error) {
-          showAlert('error', `Erreur lors de la mise à jour : ${error.message}`);
-        }
-      }
-    };
-    
-    // Active un avertissement 24h (fonction existante utilisée par le toggle)
-    window.handleSimplePaymentWarning = async (uid) => {
-      const user = allUsers.find(u => u.uid === uid);
-      if (!user) return showAlert('error', 'Utilisateur non trouvé.');
 
-      const confirmed = confirm(`🚨 AVERTISSEMENT DE PAIEMENT\n\nEnvoyer un avertissement à ${user.email} ?\n\nL'utilisateur aura 24h pour régulariser sa situation avant que son compte ne soit suspendu.`);
-      if (!confirmed) return;
+          showAlert('success', `Utilisateur ${u.email} verrouillé (déconnexion côté React).`);
+        } else {
+          // UNLOCK
+          const hours = parseInt(prompt("Durée du popup d'info (heures)", "12"), 10) || 12;
+          const expiryISO = new Date(Date.now() + hours*3600*1000).toISOString();
 
-      try {
-        const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        await updateDoc(doc(db, 'users', uid), {
-          paymentWarning: {
-            issuedAt: serverTimestamp(),
-            expiryDate: expiryDate,
+          if (!confirm(`Déverrouiller ${u.email} ?`)) return;
+
+          await updateDoc(doc(db, 'users', uid), {
             status: 'active',
-            issuedBy: currentUser.email
-          }
-        });
-        await addDoc(collection(db, 'admin_logs'), {
-          action: 'PAYMENT_WARNING_SENT',
-          adminUid: currentUser.uid,
-          adminEmail: currentUser.email,
-          targetUid: uid,
-          targetEmail: user.email,
-          details: `Avertissement de paiement envoyé à ${user.email}.`,
-          timestamp: serverTimestamp()
-        });
-        showAlert('success', `Avertissement envoyé à ${user.email}.`);
-      } catch (error) {
-        showAlert('error', `Erreur lors de l'envoi de l'avertissement: ${error.message}`);
+            locked: false,
+            lockedAt: deleteField(),
+            lockedBy: deleteField(),
+            adminPopup: {
+              status: 'active',
+              type: 'unlockNotice',
+              title: '✅ Compte réactivé',
+              message: 'Votre accès a été rétabli.',
+              details: `Réactivation par ${currentUser.email}.`,
+              issuedAt: serverTimestamp(),
+              expiryDate: expiryISO,
+              issuedBy: currentUser.email
+            }
+            // on peut nettoyer le paymentWarning si tu veux : ajoute "paymentWarning: deleteField()"
+          });
+
+          await addDoc(collection(db, 'admin_logs'), {
+            action: 'USER_UNLOCKED',
+            adminUid: currentUser.uid,
+            adminEmail: currentUser.email,
+            targetUid: uid,
+            targetEmail: u.email,
+            details: `Compte déverrouillé + popup info (${hours}h).`,
+            timestamp: serverTimestamp()
+          });
+
+          showAlert('success', `Utilisateur ${u.email} déverrouillé.`);
+        }
+      } catch (e) {
+        showAlert('error', e.message);
       }
     };
 
-    // 🔁 Bouton Avertissement TOGGLE (ON/OFF)
+    // Avertissement paiement ON/OFF (24h par défaut)
     window.togglePaymentWarning = async (uid) => {
-      const user = allUsers.find(u => u.uid === uid);
-      if (!user) return showAlert('error', 'Utilisateur non trouvé.');
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return showAlert('error', 'Utilisateur introuvable');
 
-      const isWarned = !!(user.paymentWarning && user.paymentWarning.status === 'active');
+      const isWarned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
 
       try {
         if (isWarned) {
-          // 🔴 Désactiver l’avertissement
-          await updateDoc(doc(db, 'users', uid), {
-            'paymentWarning.status': 'inactive',
-            'paymentWarning.clearedAt': serverTimestamp(),
-            'paymentWarning.clearedBy': currentUser.email,
-          });
+          if (!confirm(`Désactiver l'avertissement paiement pour ${u.email} ?`)) return;
+          await updateDoc(doc(db, 'users', uid), { paymentWarning: deleteField() });
 
           await addDoc(collection(db, 'admin_logs'), {
             action: 'PAYMENT_WARNING_DISABLED',
             adminUid: currentUser.uid,
             adminEmail: currentUser.email,
             targetUid: uid,
-            targetEmail: user.email,
-            details: `Avertissement de paiement désactivé pour ${user.email}.`,
-            timestamp: serverTimestamp(),
+            targetEmail: u.email,
+            details: `Avertissement de paiement désactivé.`,
+            timestamp: serverTimestamp()
           });
 
-          showAlert('success', `Avertissement désactivé pour ${user.email}.`);
+          showAlert('success', `Avertissement désactivé pour ${u.email}.`);
         } else {
-          // 🟡 Activer l’avertissement (24h)
-          await window.handleSimplePaymentWarning(uid);
-        }
-      } catch (error) {
-        showAlert('error', `Erreur: ${error.message}`);
-      }
-    };
-    
-    window.openRoleModal = (uid) => {
-      const user = allUsers.find(u => u.uid === uid);
-      if (!user) return;
-      
-      elements.roleModalUser.textContent = `Utilisateur: ${user.email}`;
-      elements.newRoleSelect.value = user.role || 'user';
-      elements.roleModal.dataset.uid = uid; // Stocker l'UID pour la confirmation
-      elements.roleModal.classList.remove('hidden');
-    };
+          const hours = parseInt(prompt("Durée (heures)", "24"), 10) || 24;
+          const expiryISO = new Date(Date.now() + hours*3600*1000).toISOString();
+          if (!confirm(`Envoyer AVERTISSEMENT de paiement à ${u.email} (${hours}h) ?`)) return;
 
-    // --- Initialisation ---
-    document.addEventListener('DOMContentLoaded', () => {
-      // Logique de connexion
-      elements.loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        elements.loginBtn.disabled = true;
-        elements.loginBtn.textContent = 'Connexion...';
-
-        signInWithEmailAndPassword(auth, elements.email.value, elements.password.value)
-          .catch(error => showAlert('error', `Échec de la connexion : ${error.code === 'auth/invalid-credential' ? 'Identifiants invalides' : error.message}`))
-          .finally(() => {
-            elements.loginBtn.disabled = false;
-            elements.loginBtn.textContent = 'Connexion';
+          await updateDoc(doc(db, 'users', uid), {
+            paymentWarning: {
+              status: 'active',
+              issuedAt: serverTimestamp(),
+              expiryDate: expiryISO,
+              issuedBy: currentUser.email,
+              reason: 'payment'
+            }
           });
-      });
-      
-      // Logique de déconnexion
-      elements.logoutBtn.addEventListener('click', () => signOut(auth));
-      
-      // Listeners pour les filtres
-      elements.searchUsers.addEventListener('input', renderUsers);
-      elements.roleFilter.addEventListener('change', renderUsers);
-      elements.statusFilter.addEventListener('change', renderUsers);
-      
-      // Gestion de la modale de rôle
-      elements.roleCancel.addEventListener('click', () => elements.roleModal.classList.add('hidden'));
-      elements.roleConfirm.addEventListener('click', async () => {
-        const uid = elements.roleModal.dataset.uid;
-        const newRole = elements.newRoleSelect.value;
-        const user = allUsers.find(u => u.uid === uid);
-        if (!uid || !user) return;
 
-        try {
-          await updateDoc(doc(db, 'users', uid), { role: newRole });
           await addDoc(collection(db, 'admin_logs'), {
-            action: 'USER_ROLE_CHANGED',
+            action: 'PAYMENT_WARNING_SENT',
             adminUid: currentUser.uid,
             adminEmail: currentUser.email,
             targetUid: uid,
-            targetEmail: user.email,
-            details: `Rôle de ${user.email} changé à ${newRole}.`,
+            targetEmail: u.email,
+            details: `Avertissement paiement envoyé (${hours}h).`,
             timestamp: serverTimestamp()
           });
-          showAlert('success', 'Rôle mis à jour.');
-          elements.roleModal.classList.add('hidden');
-        } catch (error) {
-          showAlert('error', `Erreur: ${error.message}`);
+
+          showAlert('success', `Avertissement envoyé à ${u.email}.`);
         }
-      });
+      } catch (e) {
+        showAlert('error', e.message);
+      }
+    };
 
-      // Écouter l'état d'authentification pour démarrer l'app
-      onAuthStateChanged(auth, user => updateUI(user));
+    // ---- init UI/auth ----
+    el.loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      el.loginBtn.disabled = true;
+      el.loginBtn.textContent = 'Connexion...';
+      signInWithEmailAndPassword(auth, el.email.value, el.password.value)
+        .catch(err => showAlert('error', err.message))
+        .finally(() => {
+          el.loginBtn.disabled = false;
+          el.loginBtn.textContent = 'Connexion';
+        });
     });
+    el.logoutBtn.addEventListener('click', () => signOut(auth));
 
+    el.searchUsers.addEventListener('input', renderUsers);
+    el.roleFilter.addEventListener('change', renderUsers);
+    el.statusFilter.addEventListener('change', renderUsers);
+
+    onAuthStateChanged(auth, (user) => {
+      updateUI(user);
+    });
   </script>
 </body>
 </html>
