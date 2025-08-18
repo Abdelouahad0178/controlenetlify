@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <title>Administration SaaS - Anapharmo Multi-tenant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <!-- Favicon inline pour éviter le 404 -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>">
   <style>
     :root {
       --bg: #0b1220;
@@ -74,6 +72,7 @@
     .status-pending{ color:var(--warning); font-weight:500; }
     .status-used{ color:var(--muted); font-weight:500; }
     .status-expired{ color:var(--bad); font-weight:500; }
+    .payment-warning-badge{ display:inline-flex; gap:4px; padding:2px 6px; border-radius:10px; background:rgba(245,158,11,.2); border:1px solid #f59e0b; font-size:10px; color:var(--warning); font-weight:700; margin-left:6px; }
 
     .actions { display:flex; gap:6px; flex-wrap:wrap; }
     .actions button { padding:6px 10px; font-size:12px; min-height:32px; white-space:nowrap; }
@@ -202,10 +201,10 @@
 
       <!-- Navigation par onglets -->
       <div class="nav-tabs">
-        <button class="nav-tab active" onclick="switchTab('users', this)">👥 Utilisateurs</button>
-        <button class="nav-tab" onclick="switchTab('societes', this)">🏢 Sociétés</button>
-        <button class="nav-tab" onclick="switchTab('invitations', this)">🎯 Invitations</button>
-        <button class="nav-tab" onclick="switchTab('logs', this)">📝 Activités</button>
+        <button class="nav-tab active" onclick="switchTab('users')">👥 Utilisateurs</button>
+        <button class="nav-tab" onclick="switchTab('societes')">🏢 Sociétés</button>
+        <button class="nav-tab" onclick="switchTab('invitations')">🎯 Invitations</button>
+        <button class="nav-tab" onclick="switchTab('logs')">📝 Activités</button>
       </div>
 
       <!-- ONGLET UTILISATEURS -->
@@ -225,6 +224,8 @@
             <option value="">Tous les statuts</option>
             <option value="active">Actifs</option>
             <option value="disabled">Désactivés</option>
+            <option value="locked">Verrouillés</option>
+            <option value="warned">Avertis paiement</option>
           </select>
           <button id="refreshUsers" aria-label="Actualiser la liste des utilisateurs">🔄 Actualiser</button>
         </div>
@@ -238,6 +239,8 @@
                 <th scope="col">🏷️ Rôle</th>
                 <th scope="col">🏢 Société</th>
                 <th scope="col">📊 Statut</th>
+                <th scope="col">🔒 Verrouillage</th>
+                <th scope="col">💰 Paiement</th>
                 <th scope="col">👑 Propriétaire</th>
                 <th scope="col">📅 Créé le</th>
                 <th scope="col">🔧 Actions</th>
@@ -348,6 +351,14 @@
             <option value="">Toutes les actions</option>
             <option value="USER_ACTIVATED">✅ Activation utilisateur</option>
             <option value="USER_DEACTIVATED">🚫 Désactivation utilisateur</option>
+            <option value="USER_LOCKED">🔒 Verrouillage utilisateur</option>
+            <option value="USER_UNLOCKED">🔓 Déverrouillage utilisateur</option>
+            <option value="VENDEUSE_LOCKED_WITH_PHARMACIEN">🔒 Vendeuse verrouillée (cascade)</option>
+            <option value="VENDEUSE_UNLOCKED_BY_PHARMACIEN">🔓 Vendeuse déverrouillée (cascade)</option>
+            <option value="PAYMENT_MARKED_PAID">✅ Paiement marqué payé</option>
+            <option value="PAYMENT_MARKED_UNPAID">❌ Paiement marqué non payé</option>
+            <option value="PAYMENT_WARNING_SENT">💰 Avertissement paiement envoyé</option>
+            <option value="PAYMENT_WARNING_DISABLED">💸 Avertissement paiement désactivé</option>
             <option value="INVITATION_CREATED">🎯 Invitation créée</option>
             <option value="INVITATION_USED">✅ Invitation utilisée</option>
             <option value="INVITATION_CANCELLED">❌ Invitation annulée</option>
@@ -433,12 +444,10 @@
       roleFilter: document.getElementById('roleFilter'),
       companyFilter: document.getElementById('companyFilter'),
       statusFilter: document.getElementById('statusFilter'),
-      refreshUsers: document.getElementById('refreshUsers'),
       
       // Sociétés
       societesTable: document.getElementById('societesTable'),
       searchSocietes: document.getElementById('searchSocietes'),
-      refreshSocietes: document.getElementById('refreshSocietes'),
       
       // Invitations
       invitationsTable: document.getElementById('invitationsTable'),
@@ -449,13 +458,11 @@
       inviteSociete: document.getElementById('inviteSociete'),
       inviteNote: document.getElementById('inviteNote'),
       createInvitation: document.getElementById('createInvitation'),
-      refreshInvitations: document.getElementById('refreshInvitations'),
       
       // Activités
       logsTable: document.getElementById('logsTable'),
       logsSearch: document.getElementById('logsSearch'),
       logsActionFilter: document.getElementById('logsActionFilter'),
-      refreshLogs: document.getElementById('refreshLogs'),
     };
 
     // Variables globales
@@ -536,6 +543,7 @@
         await navigator.clipboard.writeText(text);
         showAlert('success', 'Code copié dans le presse-papier !');
       } catch (err) {
+        // Fallback
         const textArea = document.createElement("textarea");
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -546,19 +554,111 @@
       }
     };
 
-    // Gestion des onglets (on passe le bouton appelant)
-    window.switchTab = (tabName, btn) => {
+    // Rendre la fonction accessible globalement
+    window.copyToClipboard = copyToClipboard;
+
+    // Gestion des onglets
+    window.switchTab = (tabName) => {
+      // Masquer tous les onglets
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-      const panel = document.getElementById(`tab-${tabName}`);
-      if (panel) panel.classList.add('active');
-      if (btn) btn.classList.add('active');
+      
+      // Afficher l'onglet sélectionné
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
+      
+      // Marquer le bouton comme actif
+      event.target.classList.add('active');
+    };
+
+    // Fonctions globales pour les actions
+    window.toggleUserStatus = async (uid) => {
+      const user = allUsers.find(u => u.uid === uid);
+      if (!user) return showAlert('error', 'Utilisateur introuvable');
+
+      const isActive = user.active !== false;
+      const action = isActive ? 'désactiver' : 'activer';
+      
+      if (!confirm(`Confirmer la ${action === 'désactiver' ? 'désactivation' : 'réactivation'} de ${user.email} ?`)) return;
+
+      try {
+        await updateDoc(doc(db, 'users', uid), {
+          active: !isActive,
+          modifiedAt: serverTimestamp(),
+          modifiedBy: currentUser?.email || 'admin'
+        });
+
+        await addDoc(collection(db, 'admin_logs'), {
+          action: isActive ? 'USER_DEACTIVATED' : 'USER_ACTIVATED',
+          adminUid: currentUser?.uid,
+          adminEmail: currentUser?.email,
+          targetUid: uid,
+          targetEmail: user.email,
+          details: `Utilisateur ${action}é par l'administrateur`,
+          timestamp: serverTimestamp()
+        });
+
+        showAlert('success', `Utilisateur ${action}é avec succès`);
+      } catch (error) {
+        console.error('Erreur toggleUserStatus:', error);
+        showAlert('error', `Erreur: ${error.message}`);
+      }
+    };
+
+    window.createInvitation = async () => {
+      const email = el.inviteEmail?.value;
+      const role = el.inviteRole?.value;
+      const societeId = el.inviteSociete?.value;
+      const note = el.inviteNote?.value;
+
+      if (!email || !societeId) {
+        return showAlert('error', 'Email et société sont requis');
+      }
+
+      try {
+        const code = generateInvitationCode();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+
+        await addDoc(collection(db, 'invitations'), {
+          code,
+          emailInvite: email,
+          roleInvite: role,
+          societeId,
+          noteInvite: note,
+          status: 'pending',
+          createdAt: serverTimestamp(),
+          createdBy: currentUser?.email || 'admin',
+          expiresAt: Timestamp.fromDate(expiresAt)
+        });
+
+        await addDoc(collection(db, 'admin_logs'), {
+          action: 'INVITATION_CREATED',
+          adminUid: currentUser?.uid,
+          adminEmail: currentUser?.email,
+          targetEmail: email,
+          details: `Invitation créée par admin - Code: ${code}`,
+          timestamp: serverTimestamp()
+        });
+
+        showAlert('success', `Invitation créée ! Code: ${code}`);
+        
+        // Reset form
+        if (el.inviteEmail) el.inviteEmail.value = '';
+        if (el.inviteNote) el.inviteNote.value = '';
+      } catch (error) {
+        console.error('Erreur createInvitation:', error);
+        showAlert('error', `Erreur: ${error.message}`);
+      }
     };
 
     // Mise à jour des statistiques
     const updateStats = () => {
       const activeUsers = allUsers.filter(u => u.active !== false).length;
       const pendingInvitations = allInvitations.filter(i => i.status === 'pending' && new Date(i.expiresAt?.toDate?.() || i.expiresAt) > new Date()).length;
+      
       el.statsUsers.textContent = allUsers.length;
       el.statsSocietes.textContent = allSocietes.length;
       el.statsInvitations.textContent = pendingInvitations;
@@ -590,6 +690,7 @@
         updateSocieteOptions();
       }, (err) => {
         console.warn('Erreur societes:', err);
+        // Pas d'alerte car la collection peut ne pas exister
       });
     };
 
@@ -618,6 +719,7 @@
 
     // MISE À JOUR DES FILTRES
     const updateFilters = () => {
+      // Filtre société
       const societes = [...new Set(allUsers.map(u => u.societeId).filter(Boolean))];
       el.companyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
       societes.forEach(sid => {
@@ -660,36 +762,56 @@
         const companyMatch = !companyF || (u.societeId === companyF);
         
         const isActive = u.active !== false;
+        const isLocked = u.locked === true;
+        const warned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
+        
         const statusMatch = !statusF || 
-          (statusF === 'active' && isActive) || 
-          (statusF === 'disabled' && !isActive);
+          (statusF === 'active' && isActive && !isLocked) || 
+          (statusF === 'disabled' && !isActive) ||
+          (statusF === 'locked' && isLocked) ||
+          (statusF === 'warned' && warned);
 
         return searchOK && roleMatch && companyMatch && statusMatch;
       });
 
       if (filtered.length === 0) {
-        el.usersTable.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucun utilisateur trouvé</td></tr>`;
+        el.usersTable.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucun utilisateur trouvé</td></tr>`;
         return;
       }
 
       let html = '';
       filtered.forEach(u => {
         const isActive = u.active !== false;
+        const isLocked = u.locked === true;
         const userName = extractUsernameFromEmail(u.email);
         const societeName = getSocieteName(u.societeId);
         const isOwner = u.isCompanyOwner ? '👑' : '';
+        
+        // Statut de paiement et avertissement
+        const isPaid = !!(u.isPaid || u.paid || u.paiement);
+        const warned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
+        const warnedBadge = warned ? `<span class="payment-warning-badge">⚠️ Averti</span>` : '';
 
         html += `
           <tr>
-            <td><strong>${userName}</strong></td>
+            <td><strong>${userName}</strong>${warnedBadge}</td>
             <td>${u.email || '-'}</td>
             <td>${formatRole(u.role)}</td>
             <td>${societeName}</td>
             <td><span class="${isActive ? 'status-active' : 'status-disabled'}">${isActive ? '✅ Actif' : '🚫 Désactivé'}</span></td>
+            <td><span class="${isLocked ? 'status-disabled' : 'status-active'}">${isLocked ? '🔒 Verrouillé' : '🔓 Libre'}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="togglePayment('${u.uid}', this.checked)" style="transform:scale(1.3);cursor:pointer;" id="pay-${u.uid}" />
+                <label for="pay-${u.uid}" style="font-size:12px;color:${isPaid ? 'var(--ok)' : 'var(--muted)'};cursor:pointer;user-select:none;">${isPaid ? '✅ Payé' : '❌ Non payé'}</label>
+              </div>
+            </td>
             <td>${isOwner}</td>
             <td>${formatDate(u.createdAt)}</td>
             <td class="actions">
               <button class="${isActive ? 'danger' : 'success'}" onclick="toggleUserStatus('${u.uid}')">${isActive ? '🚫 Désactiver' : '✅ Activer'}</button>
+              <button class="${isLocked ? 'success' : 'warning'}" onclick="toggleLock('${u.uid}')">${isLocked ? '🔓 Déverrouiller' : '🔒 Verrouiller'}</button>
+              <button class="${warned ? 'payment' : 'warning'}" onclick="togglePaymentWarning('${u.uid}')">${warned ? '💸 Averti ON' : '💰 Averti OFF'}</button>
             </td>
           </tr>`;
       });
@@ -825,6 +947,14 @@
       const ACTION_LABELS = {
         'USER_ACTIVATED': '✅ Activation utilisateur',
         'USER_DEACTIVATED': '🚫 Désactivation utilisateur',
+        'USER_LOCKED': '🔒 Verrouillage utilisateur',
+        'USER_UNLOCKED': '🔓 Déverrouillage utilisateur',
+        'VENDEUSE_LOCKED_WITH_PHARMACIEN': '🔒 Vendeuse verrouillée (cascade)',
+        'VENDEUSE_UNLOCKED_BY_PHARMACIEN': '🔓 Vendeuse déverrouillée (cascade)',
+        'PAYMENT_MARKED_PAID': '✅ Paiement marqué payé',
+        'PAYMENT_MARKED_UNPAID': '❌ Paiement marqué non payé',
+        'PAYMENT_WARNING_SENT': '💰 Avertissement de paiement envoyé',
+        'PAYMENT_WARNING_DISABLED': '💸 Avertissement de paiement désactivé',
         'INVITATION_CREATED': '🎯 Invitation créée',
         'INVITATION_USED': '✅ Invitation utilisée',
         'INVITATION_CANCELLED': '❌ Invitation annulée',
@@ -852,7 +982,7 @@
       el.logsTable.innerHTML = html;
     };
 
-    // ACTIONS ADMINISTRATIVES
+    // ACTIONS ADMINISTRATIVES - toutes les fonctions window
     window.toggleUserStatus = async (uid) => {
       const user = allUsers.find(u => u.uid === uid);
       if (!user) return showAlert('error', 'Utilisateur introuvable');
@@ -886,6 +1016,256 @@
       }
     };
 
+    window.toggleLock = async (uid) => {
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return showAlert('error', 'Utilisateur introuvable');
+
+      const isLocked = u.locked === true;
+      const isPharmacien = ['docteur','pharmacien','user','admin'].includes(u.role);
+
+      try {
+        if (!isLocked) {
+          // ----- VERROUILLER -----
+          const title = prompt("Titre du popup (utilisateur)", "🔒 Compte verrouillé") || "🔒 Compte verrouillé";
+          const message = prompt("Message du popup", "Votre compte a été verrouillé par l'administrateur. Contactez le support.") || "Votre compte a été verrouillé par l'administrateur. Contactez le support.";
+          const details = prompt("Détails (facultatif)", "Raison: sécurité / usage.") || "Raison: sécurité / usage.";
+          const hours = parseInt(prompt("Durée du popup (heures)", "24"), 10) || 24;
+          const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+
+          if (!confirm(`Confirmer VERROUILLAGE de ${u.email || 'cet utilisateur'} ?`)) return;
+
+          await updateDoc(doc(db, 'users', uid), {
+            locked: true,
+            lockedAt: serverTimestamp(), 
+            lockedBy: currentUser?.email || 'admin',
+            adminPopup: { 
+              status:'active', 
+              type:'lockNotice', 
+              title, 
+              message, 
+              details, 
+              issuedAt:serverTimestamp(), 
+              expiryDate:expiryISO, 
+              issuedBy: currentUser?.email || 'admin' 
+            }
+          });
+
+          await addDoc(collection(db, 'admin_logs'), {
+            action: 'USER_LOCKED', 
+            adminUid: currentUser?.uid || null, 
+            adminEmail: currentUser?.email || null,
+            targetUid: uid, 
+            targetEmail: u.email || null,
+            details: `Compte verrouillé + popup admin (${hours}h).`, 
+            timestamp: serverTimestamp()
+          });
+
+          showAlert('success', `Utilisateur ${u.email || ''} verrouillé avec succès.`);
+
+          // Verrouiller les vendeuses si c'est un pharmacien
+          if (isPharmacien) {
+            const vendeuses = allUsers.filter(v => v.role === 'vendeuse' && v.societeId === u.societeId);
+            if (vendeuses.length > 0) {
+              const batch = writeBatch(db);
+              for (const v of vendeuses) {
+                batch.update(doc(db,'users',v.uid), {
+                  locked: true, 
+                  lockedAt: serverTimestamp(), 
+                  lockedBy: currentUser?.email || 'admin',
+                  adminPopup: { 
+                    status:'active', 
+                    type:'lockNotice', 
+                    title:'🔒 Compte verrouillé', 
+                    message:'Votre compte a été verrouillé car le pharmacien de votre société est verrouillé.', 
+                    details:`Pharmacien: ${u.email || 'inconnu'}.`, 
+                    issuedAt: serverTimestamp(), 
+                    expiryDate: expiryISO, 
+                    issuedBy: currentUser?.email || 'admin' 
+                  }
+                });
+              }
+              await batch.commit();
+              
+              for (const v of vendeuses) {
+                await addDoc(collection(db,'admin_logs'), {
+                  action:'VENDEUSE_LOCKED_WITH_PHARMACIEN', 
+                  adminUid: currentUser?.uid || null, 
+                  adminEmail: currentUser?.email || null,
+                  targetUid: v.uid, 
+                  targetEmail: v.email || null,
+                  details: `Vendeuse verrouillée automatiquement car le pharmacien ${u.email || ''} a été verrouillé.`, 
+                  timestamp: serverTimestamp()
+                });
+              }
+              showAlert('warning', `${vendeuses.length} vendeuse(s) de la société ont été verrouillées automatiquement.`);
+            }
+          }
+        } else {
+          // ----- DÉVERROUILLER -----
+          const hours = parseInt(prompt("Durée du popup d'info (heures)", "12"), 10) || 12;
+          const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+          if (!confirm(`Déverrouiller ${u.email || 'cet utilisateur'} ?`)) return;
+
+          await updateDoc(doc(db,'users',uid), {
+            locked: false, 
+            lockedAt: deleteField(), 
+            lockedBy: deleteField(),
+            adminPopup: { 
+              status:'active', 
+              type:'unlockNotice', 
+              title:'✅ Compte réactivé', 
+              message:'Votre accès a été rétabli.', 
+              details:`Réactivation par ${currentUser?.email || 'admin'}.`, 
+              issuedAt: serverTimestamp(), 
+              expiryDate: expiryISO, 
+              issuedBy: currentUser?.email || 'admin' 
+            }
+          });
+
+          await addDoc(collection(db,'admin_logs'), {
+            action:'USER_UNLOCKED', 
+            adminUid: currentUser?.uid || null, 
+            adminEmail: currentUser?.email || null,
+            targetUid: uid, 
+            targetEmail: u.email || null,
+            details: `Compte déverrouillé + popup info (${hours}h).`, 
+            timestamp: serverTimestamp()
+          });
+
+          showAlert('success', `Utilisateur ${u.email || ''} déverrouillé avec succès.`);
+
+          // Déverrouiller les vendeuses si c'est un pharmacien
+          if (isPharmacien) {
+            const vendeuses = allUsers.filter(v => v.role === 'vendeuse' && v.societeId === u.societeId);
+            if (vendeuses.length > 0) {
+              const batch = writeBatch(db);
+              for (const v of vendeuses) {
+                batch.update(doc(db,'users',v.uid), {
+                  locked: false, 
+                  lockedAt: deleteField(), 
+                  lockedBy: deleteField(),
+                  adminPopup: { 
+                    status:'active', 
+                    type:'unlockNotice', 
+                    title:'✅ Compte réactivé', 
+                    message:'Votre accès a été rétabli par le pharmacien.', 
+                    details:`Pharmacien: ${u.email || 'inconnu'}.`, 
+                    issuedAt: serverTimestamp(), 
+                    expiryDate: expiryISO, 
+                    issuedBy: currentUser?.email || 'admin' 
+                  }
+                });
+              }
+              await batch.commit();
+              
+              for (const v of vendeuses) {
+                await addDoc(collection(db,'admin_logs'), {
+                  action:'VENDEUSE_UNLOCKED_BY_PHARMACIEN', 
+                  adminUid: currentUser?.uid || null, 
+                  adminEmail: currentUser?.email || null,
+                  targetUid: v.uid, 
+                  targetEmail: v.email || null,
+                  details: `Vendeuse déverrouillée automatiquement car le pharmacien ${u.email || ''} a été réactivé.`, 
+                  timestamp: serverTimestamp()
+                });
+              }
+              showAlert('info', `${vendeuses.length} vendeuse(s) de la société ont été déverrouillées automatiquement.`);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('toggleLock:', e);
+        showAlert('error', `Erreur: ${e.message}`);
+      }
+    };
+
+    window.togglePayment = async (uid, isPaid) => {
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return showAlert('error', 'Utilisateur introuvable');
+      
+      try {
+        await updateDoc(doc(db, 'users', uid), {
+          isPaid: !!isPaid,
+          paidAt: isPaid ? serverTimestamp() : deleteField(),
+          paidBy: isPaid ? currentUser?.email || 'admin' : deleteField()
+        });
+        
+        await addDoc(collection(db, 'admin_logs'), {
+          action: isPaid ? 'PAYMENT_MARKED_PAID' : 'PAYMENT_MARKED_UNPAID',
+          adminUid: currentUser?.uid || null,
+          adminEmail: currentUser?.email || null,
+          targetUid: uid,
+          targetEmail: u.email || null,
+          details: `Paiement marqué comme ${isPaid ? 'payé' : 'non payé'}`,
+          timestamp: serverTimestamp()
+        });
+        
+        showAlert('success', `Paiement de ${u.email || 'utilisateur'} marqué comme ${isPaid ? 'payé' : 'non payé'}`);
+      } catch (e) {
+        console.error('togglePayment:', e);
+        showAlert('error', `Erreur: ${e.message}`);
+      }
+    };
+
+    window.togglePaymentWarning = async (uid) => {
+      const u = allUsers.find(x => x.uid === uid);
+      if (!u) return showAlert('error', 'Utilisateur introuvable');
+      
+      const isWarned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
+      
+      try {
+        if (isWarned) {
+          if (!confirm(`Désactiver l'avertissement paiement pour ${u.email || 'cet utilisateur'} ?`)) return;
+          
+          await updateDoc(doc(db,'users',uid), { 
+            paymentWarning: deleteField() 
+          });
+          
+          await addDoc(collection(db,'admin_logs'), {
+            action:'PAYMENT_WARNING_DISABLED', 
+            adminUid: currentUser?.uid || null, 
+            adminEmail: currentUser?.email || null,
+            targetUid: uid, 
+            targetEmail: u.email || null, 
+            details:'Avertissement de paiement désactivé.', 
+            timestamp: serverTimestamp()
+          });
+          
+          showAlert('success', `Avertissement désactivé pour ${u.email || ''}.`);
+        } else {
+          const hours = parseInt(prompt("Durée (heures)", "24"), 10) || 24;
+          const expiryISO = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+          
+          if (!confirm(`Envoyer AVERTISSEMENT de paiement à ${u.email || 'cet utilisateur'} (${hours}h) ?`)) return;
+          
+          await updateDoc(doc(db,'users',uid), {
+            paymentWarning: { 
+              status:'active', 
+              issuedAt: serverTimestamp(), 
+              expiryDate: expiryISO, 
+              issuedBy: currentUser?.email || 'admin', 
+              reason:'payment' 
+            }
+          });
+          
+          await addDoc(collection(db,'admin_logs'), {
+            action:'PAYMENT_WARNING_SENT', 
+            adminUid: currentUser?.uid || null, 
+            adminEmail: currentUser?.email || null,
+            targetUid: uid, 
+            targetEmail: u.email || null, 
+            details:`Avertissement paiement envoyé (${hours}h).`, 
+            timestamp: serverTimestamp()
+          });
+          
+          showAlert('success', `Avertissement envoyé à ${u.email || ''}.`);
+        }
+      } catch (e) {
+        console.error('togglePaymentWarning:', e);
+        showAlert('error', `Erreur: ${e.message}`);
+      }
+    };
+
     window.viewSocieteDetails = (societeId) => {
       const societe = allSocietes.find(s => s.id === societeId);
       const users = allUsers.filter(u => u.societeId === societeId);
@@ -904,10 +1284,10 @@
     };
 
     window.createInvitation = async () => {
-      const email = el.inviteEmail.value;
-      const role = el.inviteRole.value;
-      const societeId = el.inviteSociete.value;
-      const note = el.inviteNote.value;
+      const email = el.inviteEmail?.value;
+      const role = el.inviteRole?.value;
+      const societeId = el.inviteSociete?.value;
+      const note = el.inviteNote?.value;
 
       if (!email || !societeId) {
         return showAlert('error', 'Email et société sont requis');
@@ -940,8 +1320,10 @@
         });
 
         showAlert('success', `Invitation créée ! Code: ${code}`);
-        el.inviteEmail.value = '';
-        el.inviteNote.value = '';
+        
+        // Reset form
+        if (el.inviteEmail) el.inviteEmail.value = '';
+        if (el.inviteNote) el.inviteNote.value = '';
       } catch (error) {
         console.error('Erreur createInvitation:', error);
         showAlert('error', `Erreur: ${error.message}`);
@@ -1043,6 +1425,7 @@
         el.adminInterface.classList.add('hidden');
         el.loginPrompt.classList.remove('hidden');
         
+        // Nettoyer les listeners
         if (unsubUsers) unsubUsers();
         if (unsubSocietes) unsubSocietes();
         if (unsubInvitations) unsubInvitations();
@@ -1077,50 +1460,66 @@
       }
     });
 
-    // Filtres et recherches
-    el.searchUsers.addEventListener('input', renderUsers);
-    el.roleFilter.addEventListener('change', renderUsers);
-    el.companyFilter.addEventListener('change', renderUsers);
-    el.statusFilter.addEventListener('change', renderUsers);
+    // Filtres et recherches - avec vérification d'existence
+    if (el.searchUsers) el.searchUsers.addEventListener('input', renderUsers);
+    if (el.roleFilter) el.roleFilter.addEventListener('change', renderUsers);
+    if (el.companyFilter) el.companyFilter.addEventListener('change', renderUsers);
+    if (el.statusFilter) el.statusFilter.addEventListener('change', renderUsers);
     
-    el.searchSocietes.addEventListener('input', renderSocietes);
+    if (el.searchSocietes) el.searchSocietes.addEventListener('input', renderSocietes);
     
-    el.searchInvitations.addEventListener('input', renderInvitations);
-    el.invitationStatusFilter.addEventListener('change', renderInvitations);
+    if (el.searchInvitations) el.searchInvitations.addEventListener('input', renderInvitations);
+    if (el.invitationStatusFilter) el.invitationStatusFilter.addEventListener('change', renderInvitations);
     
-    el.logsSearch.addEventListener('input', renderLogs);
-    el.logsActionFilter.addEventListener('change', renderLogs);
+    if (el.logsSearch) el.logsSearch.addEventListener('input', renderLogs);
+    if (el.logsActionFilter) el.logsActionFilter.addEventListener('change', renderLogs);
 
-    // Boutons d'actualisation
-    el.refreshUsers.addEventListener('click', () => {
-      listenUsers();
-      showAlert('info', 'Utilisateurs actualisés');
-    });
+    // Boutons d'actualisation - avec vérification d'existence
+    const refreshUsersBtn = document.getElementById('refreshUsers');
+    if (refreshUsersBtn) {
+      refreshUsersBtn.addEventListener('click', () => {
+        listenUsers();
+        showAlert('info', 'Utilisateurs actualisés');
+      });
+    }
     
-    el.refreshSocietes.addEventListener('click', () => {
-      listenSocietes();
-      showAlert('info', 'Sociétés actualisées');
-    });
+    const refreshSocietesBtn = document.getElementById('refreshSocietes');
+    if (refreshSocietesBtn) {
+      refreshSocietesBtn.addEventListener('click', () => {
+        listenSocietes();
+        showAlert('info', 'Sociétés actualisées');
+      });
+    }
     
-    el.refreshInvitations.addEventListener('click', () => {
-      listenInvitations();
-      showAlert('info', 'Invitations actualisées');
-    });
+    const refreshInvitationsBtn = document.getElementById('refreshInvitations');
+    if (refreshInvitationsBtn) {
+      refreshInvitationsBtn.addEventListener('click', () => {
+        listenInvitations();
+        showAlert('info', 'Invitations actualisées');
+      });
+    }
     
-    el.refreshLogs.addEventListener('click', () => {
-      listenLogs();
-      showAlert('info', 'Activités actualisées');
-    });
+    const refreshLogsBtn = document.getElementById('refreshLogs');
+    if (refreshLogsBtn) {
+      refreshLogsBtn.addEventListener('click', () => {
+        listenLogs();
+        showAlert('info', 'Activités actualisées');
+      });
+    }
 
     // Bouton création d'invitation
-    el.createInvitation.addEventListener('click', createInvitation);
+    if (el.createInvitation) {
+      el.createInvitation.addEventListener('click', () => {
+        window.createInvitation();
+      });
+    }
 
     // Écouter les changements d'authentification
     onAuthStateChanged(auth, updateUI);
 
     // Gestion des erreurs globales
     window.addEventListener('error', (e) => {
-      console.error('Erreur globale:', e.error || e.message || e);
+      console.error('Erreur globale:', e.error);
       showAlert('error', 'Une erreur inattendue s\'est produite');
     });
 
