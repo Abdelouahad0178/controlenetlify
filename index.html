@@ -201,10 +201,10 @@
 
       <!-- Navigation par onglets -->
       <div class="nav-tabs">
-        <button class="nav-tab active" onclick="switchTab('users')">👥 Utilisateurs</button>
-        <button class="nav-tab" onclick="switchTab('societes')">🏢 Sociétés</button>
-        <button class="nav-tab" onclick="switchTab('invitations')">🎯 Invitations</button>
-        <button class="nav-tab" onclick="switchTab('logs')">📝 Activités</button>
+        <button class="nav-tab active" onclick="switchTab('users', this)">👥 Utilisateurs</button>
+        <button class="nav-tab" onclick="switchTab('societes', this)">🏢 Sociétés</button>
+        <button class="nav-tab" onclick="switchTab('invitations', this)">🎯 Invitations</button>
+        <button class="nav-tab" onclick="switchTab('logs', this)">📝 Activités</button>
       </div>
 
       <!-- ONGLET UTILISATEURS -->
@@ -401,7 +401,7 @@
       serverTimestamp, addDoc, deleteField, writeBatch, limit, where, Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Configuration Firebase - MÊME QUE VOTRE PROJET
+    // Configuration Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBHQSPXwED7W-FQMMs1D-OZcjW-5AP8A-w",
       authDomain: "anapharmo.firebaseapp.com",
@@ -415,7 +415,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Email administrateur - CHANGEZ SELON VOTRE BESOIN
+    // Email administrateur
     const ADMIN_EMAIL = "echchaaba0178@gmail.com";
 
     // Éléments DOM
@@ -525,8 +525,9 @@
     };
 
     const getSocieteName = (societeId) => {
-      const societe = allSocietes.find(s => s.id === societeId);
-      return societe?.name || societe?.nom || societeId || 'Société inconnue';
+      const s = allSocietes.find(x => x.id === societeId);
+      // Affiche le NOM si présent, sinon l'ID comme fallback
+      return s?.name || s?.nom || societeId || 'Société inconnue';
     };
 
     const generateInvitationCode = () => {
@@ -543,7 +544,6 @@
         await navigator.clipboard.writeText(text);
         showAlert('success', 'Code copié dans le presse-papier !');
       } catch (err) {
-        // Fallback
         const textArea = document.createElement("textarea");
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -553,173 +553,38 @@
         showAlert('success', 'Code copié !');
       }
     };
-
-    // Rendre la fonction accessible globalement
     window.copyToClipboard = copyToClipboard;
 
-    // Gestion des onglets
-    window.switchTab = (tabName) => {
-      // Masquer tous les onglets
-      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-      
-      // Afficher l'onglet sélectionné
-      const targetTab = document.getElementById(`tab-${tabName}`);
-      if (targetTab) {
-        targetTab.classList.add('active');
-      }
-      
-      // Marquer le bouton comme actif
-      event.target.classList.add('active');
-    };
-
-    // Fonctions globales pour les actions
-    window.toggleUserStatus = async (uid) => {
-      const user = allUsers.find(u => u.uid === uid);
-      if (!user) return showAlert('error', 'Utilisateur introuvable');
-
-      const isActive = user.active !== false;
-      const action = isActive ? 'désactiver' : 'activer';
-      
-      if (!confirm(`Confirmer la ${action === 'désactiver' ? 'désactivation' : 'réactivation'} de ${user.email} ?`)) return;
-
-      try {
-        await updateDoc(doc(db, 'users', uid), {
-          active: !isActive,
-          modifiedAt: serverTimestamp(),
-          modifiedBy: currentUser?.email || 'admin'
-        });
-
-        await addDoc(collection(db, 'admin_logs'), {
-          action: isActive ? 'USER_DEACTIVATED' : 'USER_ACTIVATED',
-          adminUid: currentUser?.uid,
-          adminEmail: currentUser?.email,
-          targetUid: uid,
-          targetEmail: user.email,
-          details: `Utilisateur ${action}é par l'administrateur`,
-          timestamp: serverTimestamp()
-        });
-
-        showAlert('success', `Utilisateur ${action}é avec succès`);
-      } catch (error) {
-        console.error('Erreur toggleUserStatus:', error);
-        showAlert('error', `Erreur: ${error.message}`);
-      }
-    };
-
-    window.createInvitation = async () => {
-      const email = el.inviteEmail?.value;
-      const role = el.inviteRole?.value;
-      const societeId = el.inviteSociete?.value;
-      const note = el.inviteNote?.value;
-
-      if (!email || !societeId) {
-        return showAlert('error', 'Email et société sont requis');
-      }
-
-      try {
-        const code = generateInvitationCode();
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
-
-        await addDoc(collection(db, 'invitations'), {
-          code,
-          emailInvite: email,
-          roleInvite: role,
-          societeId,
-          noteInvite: note,
-          status: 'pending',
-          createdAt: serverTimestamp(),
-          createdBy: currentUser?.email || 'admin',
-          expiresAt: Timestamp.fromDate(expiresAt)
-        });
-
-        await addDoc(collection(db, 'admin_logs'), {
-          action: 'INVITATION_CREATED',
-          adminUid: currentUser?.uid,
-          adminEmail: currentUser?.email,
-          targetEmail: email,
-          details: `Invitation créée par admin - Code: ${code}`,
-          timestamp: serverTimestamp()
-        });
-
-        showAlert('success', `Invitation créée ! Code: ${code}`);
-        
-        // Reset form
-        if (el.inviteEmail) el.inviteEmail.value = '';
-        if (el.inviteNote) el.inviteNote.value = '';
-      } catch (error) {
-        console.error('Erreur createInvitation:', error);
-        showAlert('error', `Erreur: ${error.message}`);
-      }
-    };
-
-    // Mise à jour des statistiques
+    // --- MISE À JOUR DES STATISTIQUES (corrige "updateStats is not defined") ---
     const updateStats = () => {
       const activeUsers = allUsers.filter(u => u.active !== false).length;
-      const pendingInvitations = allInvitations.filter(i => i.status === 'pending' && new Date(i.expiresAt?.toDate?.() || i.expiresAt) > new Date()).length;
-      
+
+      // Invitations encore valides ET au statut "pending"
+      const pendingInvitations = allInvitations.filter(i => {
+        const status = i?.status || 'pending';
+        const raw = i?.expiresAt;
+        const exp = raw?.toDate ? raw.toDate() : (raw ? new Date(raw) : null);
+        const notExpired = !exp || exp > new Date();
+        return status === 'pending' && notExpired;
+      }).length;
+
       el.statsUsers.textContent = allUsers.length;
-      el.statsSocietes.textContent = allSocietes.length;
+      el.statsSocietes.textContent = allSocietes.length; // ← basé sur la collection 'societe'
       el.statsInvitations.textContent = pendingInvitations;
       el.statsActiveUsers.textContent = activeUsers;
     };
 
-    // LISTENERS FIRESTORE
-    const listenUsers = () => {
-      if (unsubUsers) unsubUsers();
-      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-      unsubUsers = onSnapshot(q, (snap) => {
-        allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-        renderUsers();
-        updateStats();
-        updateFilters();
-      }, (err) => {
-        console.error('Erreur users:', err);
-        showAlert('error', 'Erreur de chargement des utilisateurs');
-      });
-    };
-
-    const listenSocietes = () => {
-      if (unsubSocietes) unsubSocietes();
-      const q = query(collection(db, 'societes'), orderBy('createdAt', 'desc'));
-      unsubSocietes = onSnapshot(q, (snap) => {
-        allSocietes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderSocietes();
-        updateStats();
-        updateSocieteOptions();
-      }, (err) => {
-        console.warn('Erreur societes:', err);
-        // Pas d'alerte car la collection peut ne pas exister
-      });
-    };
-
-    const listenInvitations = () => {
-      if (unsubInvitations) unsubInvitations();
-      const q = query(collection(db, 'invitations'), orderBy('createdAt', 'desc'));
-      unsubInvitations = onSnapshot(q, (snap) => {
-        allInvitations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderInvitations();
-        updateStats();
-      }, (err) => {
-        console.warn('Erreur invitations:', err);
-      });
-    };
-
-    const listenLogs = () => {
-      if (unsubLogs) unsubLogs();
-      const q = query(collection(db, 'admin_logs'), orderBy('timestamp', 'desc'), limit(100));
-      unsubLogs = onSnapshot(q, (snap) => {
-        allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderLogs();
-      }, (err) => {
-        console.warn('Erreur logs:', err);
-      });
+    // Gestion des onglets (évite d'utiliser event implicite)
+    window.switchTab = (tabName, elBtn) => {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) targetTab.classList.add('active');
+      if (elBtn) elBtn.classList.add('active');
     };
 
     // MISE À JOUR DES FILTRES
     const updateFilters = () => {
-      // Filtre société
       const societes = [...new Set(allUsers.map(u => u.societeId).filter(Boolean))];
       el.companyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
       societes.forEach(sid => {
@@ -775,7 +640,7 @@
       });
 
       if (filtered.length === 0) {
-        el.usersTable.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucun utilisateur trouvé</td></tr>`;
+        el.usersTable.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted);font-style:italic;">Aucun utilisateur trouvé</td></tr>`;
         return;
       }
 
@@ -787,7 +652,6 @@
         const societeName = getSocieteName(u.societeId);
         const isOwner = u.isCompanyOwner ? '👑' : '';
         
-        // Statut de paiement et avertissement
         const isPaid = !!(u.isPaid || u.paid || u.paiement);
         const warned = !!(u.paymentWarning && u.paymentWarning.status === 'active');
         const warnedBadge = warned ? `<span class="payment-warning-badge">⚠️ Averti</span>` : '';
@@ -862,7 +726,6 @@
         const society = getSocieteName(i.societeId).toLowerCase();
         const searchOK = !term || email.includes(term) || code.includes(term) || society.includes(term);
 
-        // Déterminer le statut réel
         let realStatus = i.status || 'pending';
         if (realStatus === 'pending' && i.expiresAt) {
           const expiry = i.expiresAt?.toDate?.() || new Date(i.expiresAt);
@@ -982,7 +845,59 @@
       el.logsTable.innerHTML = html;
     };
 
-    // ACTIONS ADMINISTRATIVES - toutes les fonctions window
+    // LISTENERS FIRESTORE
+    const listenUsers = () => {
+      if (unsubUsers) unsubUsers();
+      const qUsers = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      unsubUsers = onSnapshot(qUsers, (snap) => {
+        allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        renderUsers();
+        updateStats();
+        updateFilters();
+      }, (err) => {
+        console.error('Erreur users:', err);
+        showAlert('error', 'Erreur de chargement des utilisateurs');
+      });
+    };
+
+    // ✅ IMPORTANT : collection 'societe' (singulier)
+    const listenSocietes = () => {
+      if (unsubSocietes) unsubSocietes();
+      const qSoc = query(collection(db, 'societe'), orderBy('createdAt', 'desc'));
+      unsubSocietes = onSnapshot(qSoc, (snap) => {
+        allSocietes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderSocietes();
+        updateStats();
+        updateSocieteOptions();
+      }, (err) => {
+        console.warn('Erreur societe:', err);
+      });
+    };
+
+    const listenInvitations = () => {
+      if (unsubInvitations) unsubInvitations();
+      const qInv = query(collection(db, 'invitations'), orderBy('createdAt', 'desc'));
+      unsubInvitations = onSnapshot(qInv, (snap) => {
+        allInvitations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderInvitations();
+        updateStats();
+      }, (err) => {
+        console.warn('Erreur invitations:', err);
+      });
+    };
+
+    const listenLogs = () => {
+      if (unsubLogs) unsubLogs();
+      const qLogs = query(collection(db, 'admin_logs'), orderBy('timestamp', 'desc'), limit(100));
+      unsubLogs = onSnapshot(qLogs, (snap) => {
+        allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderLogs();
+      }, (err) => {
+        console.warn('Erreur logs:', err);
+      });
+    };
+
+    // ACTIONS ADMINISTRATIVES (exposées sur window)
     window.toggleUserStatus = async (uid) => {
       const user = allUsers.find(u => u.uid === uid);
       if (!user) return showAlert('error', 'Utilisateur introuvable');
@@ -1267,14 +1182,14 @@
     };
 
     window.viewSocieteDetails = (societeId) => {
-      const societe = allSocietes.find(s => s.id === societeId);
+      const s = allSocietes.find(ss => ss.id === societeId);
       const users = allUsers.filter(u => u.societeId === societeId);
       
-      let details = `🏢 ${societe?.name || societe?.nom || societeId}\n\n`;
-      details += `📍 Adresse: ${societe?.address || societe?.adresse || 'Non renseignée'}\n`;
-      details += `📞 Téléphone: ${societe?.phone || societe?.telephone || 'Non renseigné'}\n`;
-      details += `👑 Propriétaire: ${societe?.ownerEmail || 'Non renseigné'}\n`;
-      details += `📅 Créée le: ${formatDate(societe?.createdAt)}\n\n`;
+      let details = `🏢 ${s?.name || s?.nom || societeId}\n\n`;
+      details += `📍 Adresse: ${s?.address || s?.adresse || 'Non renseignée'}\n`;
+      details += `📞 Téléphone: ${s?.phone || s?.telephone || 'Non renseigné'}\n`;
+      details += `👑 Propriétaire: ${s?.ownerEmail || 'Non renseigné'}\n`;
+      details += `📅 Créée le: ${formatDate(s?.createdAt)}\n\n`;
       details += `👥 Utilisateurs (${users.length}):\n`;
       users.forEach(u => {
         details += `  • ${u.email} (${formatRole(u.role)}) ${u.active !== false ? '✅' : '🚫'}\n`;
@@ -1321,7 +1236,6 @@
 
         showAlert('success', `Invitation créée ! Code: ${code}`);
         
-        // Reset form
         if (el.inviteEmail) el.inviteEmail.value = '';
         if (el.inviteNote) el.inviteNote.value = '';
       } catch (error) {
@@ -1425,7 +1339,6 @@
         el.adminInterface.classList.add('hidden');
         el.loginPrompt.classList.remove('hidden');
         
-        // Nettoyer les listeners
         if (unsubUsers) unsubUsers();
         if (unsubSocietes) unsubSocietes();
         if (unsubInvitations) unsubInvitations();
@@ -1460,7 +1373,6 @@
       }
     });
 
-    // Filtres et recherches - avec vérification d'existence
     if (el.searchUsers) el.searchUsers.addEventListener('input', renderUsers);
     if (el.roleFilter) el.roleFilter.addEventListener('change', renderUsers);
     if (el.companyFilter) el.companyFilter.addEventListener('change', renderUsers);
@@ -1474,7 +1386,6 @@
     if (el.logsSearch) el.logsSearch.addEventListener('input', renderLogs);
     if (el.logsActionFilter) el.logsActionFilter.addEventListener('change', renderLogs);
 
-    // Boutons d'actualisation - avec vérification d'existence
     const refreshUsersBtn = document.getElementById('refreshUsers');
     if (refreshUsersBtn) {
       refreshUsersBtn.addEventListener('click', () => {
@@ -1507,17 +1418,14 @@
       });
     }
 
-    // Bouton création d'invitation
     if (el.createInvitation) {
       el.createInvitation.addEventListener('click', () => {
         window.createInvitation();
       });
     }
 
-    // Écouter les changements d'authentification
     onAuthStateChanged(auth, updateUI);
 
-    // Gestion des erreurs globales
     window.addEventListener('error', (e) => {
       console.error('Erreur globale:', e.error);
       showAlert('error', 'Une erreur inattendue s\'est produite');
